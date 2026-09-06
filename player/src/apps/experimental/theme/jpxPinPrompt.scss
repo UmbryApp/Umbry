@@ -1,0 +1,172 @@
+// Umbry PIN keypad. Theme-token driven so it follows the selected App Theme; falls back to a
+// dark glass look when tokens are unset (e.g. pre-login / auth screen).
+
+.jpx-pin-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.66);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: jpx-pin-fade 0.18s ease;
+}
+
+@keyframes jpx-pin-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.jpx-pin-card {
+    width: min(92vw, 360px);
+    padding: 26px 24px 18px;
+    border-radius: 20px;
+    background: var(--jpx-t-card, #1b1d24);
+    color: var(--jpx-t-text, #fff);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    text-align: center;
+    animation: jpx-pin-pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+@keyframes jpx-pin-pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.jpx-pin-shake { animation: jpx-pin-shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes jpx-pin-shake {
+    10%, 90% { transform: translateX(-2px); }
+    20%, 80% { transform: translateX(4px); }
+    30%, 50%, 70% { transform: translateX(-8px); }
+    40%, 60% { transform: translateX(8px); }
+}
+
+.jpx-pin-lock {
+    font-size: 34px !important;
+    line-height: 1;
+    color: var(--jpx-t-accent, #c235ff);
+    margin-bottom: 8px;
+}
+
+.jpx-pin-title { font-size: 1.18rem; font-weight: 600; }
+.jpx-pin-sub { margin-top: 6px; font-size: 0.86rem; opacity: 0.72; min-height: 1.1em; }
+.jpx-pin-err { color: #ff5d6c; opacity: 1; }
+
+.jpx-pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 18px 0 22px;
+}
+.jpx-pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--jpx-t-accent, #c235ff);
+    opacity: 0.5;
+    transition: all 0.14s ease;
+}
+.jpx-pin-dot.filled {
+    background: var(--jpx-t-accent, #c235ff);
+    opacity: 1;
+    transform: scale(1.08);
+}
+
+.jpx-pin-keys {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+.jpx-pin-key {
+    height: 62px;
+    border: none;
+    border-radius: 14px;
+    background: var(--jpx-t-button-normal, rgba(255, 255, 255, 0.08));
+    color: var(--jpx-t-text, #fff);
+    font-size: 1.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.08s ease, background 0.14s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.jpx-pin-key:hover { background: var(--jpx-t-accent, rgba(255, 255, 255, 0.16)); }
+.jpx-pin-key:active { transform: scale(0.93); }
+.jpx-pin-key:disabled { opacity: 0.5; cursor: default; }
+.jpx-pin-key-empty { visibility: hidden; }
+.jpx-pin-key-del { background: transparent; }
+.jpx-pin-key-del .material-icons { font-size: 26px; }
+
+.jpx-pin-cancel {
+    margin-top: 14px;
+    background: none;
+    border: none;
+    color: var(--jpx-t-text, #fff);
+    opacity: 0.6;
+    font-size: 0.92rem;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+.jpx-pin-cancel:hover { opacity: 1; }
+
+// ---- Hidden Libraries picker (shares the card/overlay) ----
+.jpx-pin-card-wide { width: min(94vw, 420px); }
+
+.jpx-lib-list {
+    margin: 14px 0 4px;
+    max-height: 46vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+}
+.jpx-lib-empty {
+    padding: 22px 0;
+    opacity: 0.6;
+    text-align: center;
+}
+.jpx-lib-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 12px;
+    background: var(--jpx-t-button-normal, rgba(255, 255, 255, 0.08));
+    color: var(--jpx-t-text, #fff);
+    cursor: pointer;
+    transition: background 0.14s ease;
+    width: 100%;
+}
+.jpx-lib-row:hover { background: var(--jpx-t-accent, rgba(255, 255, 255, 0.16)); }
+.jpx-lib-row.hidden-on { background: rgba(255, 93, 108, 0.16); }
+.jpx-lib-ic { font-size: 22px; opacity: 0.85; }
+.jpx-lib-name { flex: 1; font-size: 0.98rem; }
+.jpx-lib-check { font-size: 22px; opacity: 0.5; }
+.jpx-lib-check.on { color: #ff5d6c; opacity: 1; }
+
+
+// ---- Blocked genres/tags picker input ----
+.jpx-genre-add {
+    display: flex;
+    gap: 8px;
+    margin: 12px 0 2px;
+}
+.jpx-genre-input {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: var(--jpx-t-button-normal, rgba(255, 255, 255, 0.08));
+    color: var(--jpx-t-text, #fff);
+    font-size: 0.95rem;
+}
+.jpx-genre-input::placeholder { color: var(--jpx-t-text, #fff); opacity: 0.5; }
+.jpx-genre-addbtn {
+    padding: 0 16px;
+    border: none;
+    border-radius: 10px;
+    background: var(--jpx-t-accent, #c235ff);
+    color: #001018;
+    font-weight: 600;
+    cursor: pointer;
+}
+.jpx-genre-addbtn:hover { filter: brightness(1.08); }

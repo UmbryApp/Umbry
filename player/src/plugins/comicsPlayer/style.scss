@@ -1,0 +1,179 @@
+#comicsPlayer {
+    background: #0a0a0d;
+
+    .slideshowSwiperContainer {
+        height: 100%;
+    }
+
+    .slider-zoom-container {
+        text-align: center;
+        height: 100%;
+    }
+
+    .swiper-slide-img {
+        max-height: 100%;
+        max-width: 100%;
+        height: 100%;
+        width: 100%;
+        object-fit: contain;
+    }
+}
+
+/* ===================== Umbry — Moonfin comic reader ===================== */
+#comicsPlayer.jpx-comic {
+    /* Inset the page area BETWEEN the always-on frosted bars so the top and bottom of the comic
+       are never hidden behind them (the Swiper fills #comicsPlayer; padding + border-box shrinks
+       the static swiper container, while the position:fixed bars stay at the screen edges). */
+    box-sizing: border-box;
+    padding-top: calc(env(safe-area-inset-top) + 4em);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 6em);
+
+    /* invert (color) filter on the pages */
+    .jpx-comic-stage.jpx-comic-inverted .swiper-slide-img { filter: invert(1) hue-rotate(180deg); }
+
+    /* frosted top + bottom bars */
+    .jpx-comic-top,
+    .jpx-comic-bottom {
+        position: fixed;
+        left: 0;
+        right: 0;
+        z-index: 1003;
+        display: flex;
+        align-items: center;
+        color: #fff;
+        background: rgba(20, 18, 30, 0.66);
+        -webkit-backdrop-filter: blur(22px) saturate(1.25);
+        backdrop-filter: blur(22px) saturate(1.25);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .jpx-comic-top {
+        top: 0;
+        gap: 0.4em;
+        padding: calc(0.5em + env(safe-area-inset-top)) 0.8em 0.5em;
+        border-top: 0;
+        border-left: 0;
+        border-right: 0;
+        border-radius: 0 0 16px 16px;
+    }
+    .jpx-comic-bottom {
+        bottom: 0;
+        flex-direction: column;
+        gap: 0.6em;
+        padding: 0.7em 0.9em calc(0.7em + env(safe-area-inset-bottom));
+        border-bottom: 0;
+        border-left: 0;
+        border-right: 0;
+        border-radius: 16px 16px 0 0;
+    }
+
+    .jpx-comic-back { color: #fff !important; flex: 0 0 auto; }
+    .jpx-comic-title { font-size: 1.05rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+    /* page slider row */
+    .jpx-comic-slider-row { width: 100%; display: flex; align-items: center; gap: 0.7em; }
+    .jpx-comic-page,
+    .jpx-comic-total { font-size: 0.85rem; color: rgba(255, 255, 255, 0.75); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+    .jpx-comic-slider {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 5px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.2);
+        outline: none;
+        min-width: 0;
+    }
+    .jpx-comic-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: var(--jpx-t-range-thumb, var(--jpx-t-accent, #9385F5));
+    }
+    .jpx-comic-slider::-moz-range-thumb { width: 15px; height: 15px; border: 0; border-radius: 50%; background: var(--jpx-t-range-thumb, var(--jpx-t-accent, #9385F5)); }
+
+    /* controls row: segmented modes + icon toggles */
+    .jpx-comic-controls { width: 100%; display: flex; align-items: center; gap: 0.5em; }
+    .jpx-comic-modes {
+        flex: 1;
+        display: flex;
+        gap: 0.25em;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 999px;
+        padding: 0.2em;
+        overflow: hidden;
+    }
+    .jpx-comic-mode {
+        flex: 1;
+        border: 0;
+        background: none;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.92rem;
+        font-weight: 600;
+        padding: 0.5em 0.4em;
+        border-radius: 999px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .jpx-comic-mode.on {
+        background: var(--jpx-t-accent, #9385F5);
+        color: var(--jpx-t-on-accent, #160E2A);
+    }
+    .jpx-comic-icon {
+        flex: 0 0 auto;
+        border: 0;
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff !important;
+        width: 2.6em;
+        height: 2.6em;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+    .jpx-comic-icon.on { background: var(--jpx-t-accent, #9385F5); color: var(--jpx-t-on-accent, #160E2A) !important; }
+    .jpx-comic-icon .material-icons { font-size: 1.4em; }
+
+    /* keep the swiper nav arrows subtle over the frosted bars */
+    .swiper-button-next,
+    .swiper-button-prev { color: rgba(255, 255, 255, 0.5); }
+}
+
+/* thumbnail strip (toggled by the view_carousel button) */
+#comicsPlayer.jpx-comic .jpx-comic-strip {
+    display: flex;
+    gap: 0.5em;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.2em 0.1em 0.5em;
+    scrollbar-width: none;
+    width: 100%;
+}
+#comicsPlayer.jpx-comic .jpx-comic-strip::-webkit-scrollbar { display: none; }
+#comicsPlayer.jpx-comic .jpx-comic-thumb {
+    position: relative;
+    flex: 0 0 auto;
+    width: 3.4em;
+    height: 4.8em;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+}
+#comicsPlayer.jpx-comic .jpx-comic-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+#comicsPlayer.jpx-comic .jpx-comic-thumb.on { border-color: var(--jpx-t-accent, #9385F5); }
+#comicsPlayer.jpx-comic .jpx-comic-thumb-n {
+    position: absolute;
+    right: 2px;
+    bottom: 1px;
+    font-size: 0.62rem;
+    line-height: 1;
+    padding: 1px 3px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+}

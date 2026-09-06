@@ -1,0 +1,302 @@
+/* Umbry home hero — cinematic featured media bar (Moonfin-inspired). */
+.jpx-hero {
+    position: relative;
+    width: 100%;
+    height: 60vh;
+    min-height: 400px;
+    max-height: 680px;
+    /* Sit BELOW the floating nav so the nav has its own line above the hero (Moonfin-style),
+       instead of overlaying the poster. */
+    margin: 3.7rem 0 1.4em;
+    overflow: hidden;
+    border-radius: 22px;
+    background: #000;
+    cursor: pointer;
+}
+.jpx-hero-backdrop { cursor: pointer; }
+
+.jpx-hero--empty {
+    display: none;
+}
+
+/* Two stacked backdrop layers that crossfade between titles */
+.jpx-hero-backdrop {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 18%;
+    transform: scale(1.03);
+    opacity: 0;
+    transition: opacity 0.9s ease;
+    will-change: opacity;
+}
+
+.jpx-hero-backdrop.active {
+    opacity: 1;
+}
+
+.jpx-hero-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.62) 34%, rgba(0, 0, 0, 0) 68%),
+        linear-gradient(0deg, #000 1%, rgba(0, 0, 0, 0.25) 42%, rgba(0, 0, 0, 0) 72%);
+}
+
+.jpx-hero-content {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 0 4.5vw 3.2vh;
+    max-width: 46em;
+    z-index: 2;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
+}
+
+.jpx-hero-content--in {
+    opacity: 1;
+    transform: none;
+}
+
+.jpx-hero-logo {
+    max-width: min(340px, 62vw);
+    max-height: 148px;
+    object-fit: contain;
+    object-position: left bottom;
+    display: block;
+    margin-bottom: 0.55em;
+    filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.65));
+}
+
+.jpx-hero-title {
+    font-size: clamp(2rem, 4.4vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1.05;
+    margin: 0 0 0.25em;
+    text-shadow: 0 3px 22px rgba(0, 0, 0, 0.75);
+}
+
+.jpx-hero-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.55em;
+    color: #d6d6de;
+    font-size: 0.95rem;
+    margin-bottom: 0.85em;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+
+.jpx-hero-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--jpx-accent, #c235ff);
+    display: inline-block;
+    flex: 0 0 auto;
+}
+
+.jpx-hero-rating {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 4px;
+    padding: 0 0.4em;
+    font-size: 0.82em;
+    line-height: 1.5;
+}
+
+.jpx-hero-overview {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #cfcfd8;
+    margin: 0 0 1.15em;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.jpx-hero-actions {
+    display: flex;
+    gap: 0.8em;
+    flex-wrap: wrap;
+}
+
+.jpx-hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.72em 1.7em;
+    border: 0;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: #fff;
+    transition: box-shadow 0.25s ease, transform 0.15s ease, background 0.25s ease;
+
+    .material-icons {
+        font-size: 1.35em;
+    }
+}
+
+.jpx-hero-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Consistent Play / More Info on EVERY server. The Jellyfin server's branding CSS forces its home
+   emby-buttons to a translucent dark fill (.homeSectionsContainer .emby-button !important); Emby/Plex
+   ship no such rule, so Umbry's gradient showed through there. Bake the Jellyfin look in with a
+   higher-specificity + !important rule so all three match: dark translucent fill + accent glow. */
+.jpx-hero-actions .jpx-hero-play {
+    background: rgba(255, 255, 255, 0.1) !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 0 24px var(--jpx-accent-glow, rgba(194, 53, 255, 0.5));
+}
+
+.jpx-hero-actions .jpx-hero-play:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+    box-shadow: 0 0 42px var(--jpx-accent-glow, rgba(194, 53, 255, 0.72));
+}
+
+.jpx-hero-actions .jpx-hero-info {
+    background: rgba(255, 255, 255, 0.1) !important;
+    background-image: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 12px !important;
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+}
+
+.jpx-hero-actions .jpx-hero-info:hover {
+    background: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* Position dots (bottom-right) */
+.jpx-hero-dots {
+    position: absolute;
+    right: 4.5vw;
+    bottom: 3.2vh;
+    display: flex;
+    gap: 0.5em;
+    z-index: 3;
+}
+
+.jpx-hero-nav-dot {
+    width: 9px;
+    height: 9px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: background 0.3s ease, width 0.3s ease;
+}
+
+.jpx-hero-nav-dot:hover {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.jpx-hero-nav-dot.active {
+    width: 22px;
+    border-radius: 5px;
+    background: var(--jpx-accent, #c235ff);
+    box-shadow: 0 0 10px var(--jpx-accent-glow, rgba(194, 53, 255, 0.7));
+}
+
+/* Tighter hero on small screens */
+@media (max-width: 800px) {
+    .jpx-hero {
+        height: 52vh;
+        min-height: 320px;
+    }
+
+    .jpx-hero-overview {
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+    }
+
+    .jpx-hero-dots {
+        bottom: 1.6vh;
+    }
+}
+
+/* Umbry Media Bar trailer preview (YouTube embed behind the hero) */
+.jpx-hero-trailer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    pointer-events: none;
+    z-index: 0;
+    transform: scale(1.4);
+    transform-origin: center;
+    opacity: 0;
+}
+@keyframes jpxHeroTrailerFade { to { opacity: 1; } }
+/* Reveal only once real playback starts (jpxTrailer adds --playing), so YouTube's load-time
+   controls/spinner never flash into view. */
+.jpx-hero-trailer.jpx-hero-trailer--playing { animation: jpxHeroTrailerFade 0.7s ease forwards; }
+
+video.jpx-hero-trailer { transform: none; object-fit: cover; }
+
+/* Trailer playing: hide the synopsis card and shrink the logo/title so only a small logo (bottom
+   left) + the action buttons sit over the trailer. */
+/* Trailer mode keeps a small meta line (year / rating / runtime / genre) under the logo, but drops
+   the frosted card look and hides the full synopsis. */
+.jpx-hero--trailer .jpx-hero-card {
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: transparent;
+    box-shadow: none;
+    padding: 0;
+    margin-bottom: 0.35em;
+    transition: background 0.3s ease, padding 0.3s ease, margin 0.3s ease;
+}
+.jpx-hero--trailer .jpx-hero-overview { display: none; }
+.jpx-hero--trailer .jpx-hero-meta { margin-bottom: 0; }
+.jpx-hero--trailer .jpx-hero-logo {
+    max-width: min(200px, 44vw);
+    max-height: 82px;
+    transition: max-width 0.5s ease, max-height 0.5s ease;
+}
+.jpx-hero--trailer .jpx-hero-title {
+    font-size: clamp(1.35rem, 2.6vw, 2rem);
+    transition: font-size 0.5s ease;
+}
+/* YouTube IFrame-API player: the <iframe> lives inside a .jpx-hero-trailer wrapper (which keeps
+   the scale(1.4) crop); make the iframe fill it. */
+.jpx-hero-trailer iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+
+/* Moonfin-style frosted-glass details card wrapping the hero metadata + synopsis. */
+.jpx-hero-card {
+    display: inline-block;
+    max-width: min(40em, 92vw);
+    margin-bottom: 1.1em;
+    padding: 0.95em 1.15em 1.05em;
+    background: rgba(18, 16, 24, 0.34);
+    -webkit-backdrop-filter: blur(22px) saturate(1.25);
+    backdrop-filter: blur(22px) saturate(1.25);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    box-shadow: 0 10px 44px rgba(0, 0, 0, 0.42);
+}
+
+/* Inside the frosted card the heavy text-shadows are no longer needed. */
+.jpx-hero-card .jpx-hero-meta,
+.jpx-hero-card .jpx-hero-overview {
+    text-shadow: none;
+    margin-bottom: 0;
+}
+.jpx-hero-card .jpx-hero-meta {
+    margin-bottom: 0.6em;
+}

@@ -1,0 +1,84 @@
+// Plex sign-in dialog — reuses the .jpx-pin-overlay / .jpx-pin-card shell.
+.jpx-plex-card { width: min(94vw, 400px); }
+
+.jpx-plex-logo {
+    font-size: 40px !important;
+    line-height: 1;
+    color: #e5a00d; // Plex amber
+    margin-bottom: 6px;
+}
+
+.jpx-plex-oauth-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 13px 16px;
+    border: none;
+    border-radius: 12px;
+    background: #e5a00d; // Plex amber
+    color: #1a1a1a;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: filter 0.14s ease, transform 0.08s ease;
+}
+.jpx-plex-oauth-btn:hover { filter: brightness(1.06); }
+.jpx-plex-oauth-btn:active { transform: scale(0.98); }
+.jpx-plex-oauth-btn:disabled { opacity: 0.6; cursor: default; }
+.jpx-plex-oauth-btn .material-icons { font-size: 20px; }
+
+.jpx-plex-or {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 16px 0 6px;
+    opacity: 0.55;
+    font-size: 0.8rem;
+}
+.jpx-plex-or::before, .jpx-plex-or::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.4;
+    margin: 0 10px;
+}
+
+.jpx-plex-field { width: 100%; margin-top: 10px; box-sizing: border-box; }
+
+.jpx-plex-signin-btn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 12px;
+    background: var(--jpx-t-accent, #c235ff);
+    color: #001018;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.jpx-plex-signin-btn:hover { filter: brightness(1.08); }
+.jpx-plex-signin-btn:disabled { opacity: 0.6; cursor: default; }
+
+.jpx-plex-waiting {
+    margin-top: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    font-size: 0.95rem;
+    opacity: 0.85;
+}
+.jpx-plex-spinner {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.18);
+    border-top-color: #e5a00d;
+    animation: jpx-plex-spin 0.9s linear infinite;
+}
+@keyframes jpx-plex-spin { to { transform: rotate(360deg); } }

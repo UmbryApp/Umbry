@@ -1,0 +1,23 @@
+Umbry Player - Source Code
+==========================
+
+Umbry is a media player built on Jellyfin Web (https://github.com/jellyfin/jellyfin-web),
+which is licensed under the GNU General Public License, version 2 (see the LICENSE file).
+Umbry is therefore distributed under the same license (GPL-2.0).
+
+Acknowledgments:
+ - Jellyfin Web (https://github.com/jellyfin/jellyfin-web), GPL-2.0 - the base this app is built on.
+ - Emby and Plex - supported media servers (Umbry is an independent client, not affiliated with either).
+ - The Moonfin project (https://github.com/Moonfin-Client), GPL-2.0 - several of Umbry's visual
+   themes were adapted from Moonfin's theme presets and then customized. Umbry is an independent
+   project and is not affiliated with, or endorsed by, Moonfin, Jellyfin, or Emby.
+
+This archive is the complete corresponding source for the Umbry Player web application, including
+Umbry's own modifications (chiefly the files matching src/**/jpx*). Third-party dependencies are
+NOT bundled; they are pinned in package-lock.json. To build:
+
+    npm ci
+    npm run build:production
+
+Corresponding source for the current build is always available at:
+    https://dl.umbry.org/umbry-web-source.tar.gz

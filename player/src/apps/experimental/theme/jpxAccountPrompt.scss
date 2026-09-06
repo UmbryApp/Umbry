@@ -1,0 +1,210 @@
+/* Umbry account gate — full-screen sign-in / register. Aurora background matches the boot splash. */
+.jpx-account-host { position: fixed; inset: 0; z-index: 100000; }
+
+.jpx-account-overlay {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: #08070d;
+    overflow: hidden;
+    font-family: inherit;
+}
+
+.jpx-account-aurora { position: absolute; inset: 0; z-index: 0; filter: blur(72px); opacity: 0.85; }
+.jpx-account-blob { position: absolute; width: 68vmax; height: 68vmax; border-radius: 50%; }
+.jpx-account-blob.b1 { background: radial-gradient(circle, #FF9A4B 0%, transparent 72%); top: -10%; left: -8%; animation: jpxAccA 22s ease-in-out infinite; }
+.jpx-account-blob.b2 { background: radial-gradient(circle, #7B6EF0 0%, transparent 72%); bottom: -12%; right: -6%; animation: jpxAccB 27s ease-in-out infinite; }
+.jpx-account-blob.b3 { background: radial-gradient(circle, #C77BD8 0%, transparent 72%); top: 30%; left: 40%; animation: jpxAccC 19s ease-in-out infinite; }
+
+@keyframes jpxAccA {
+    0% { transform: translate(0, 0) scale(1); }
+    20% { transform: translate(52%, 34%) scale(1.28); }
+    40% { transform: translate(14%, 72%) scale(0.82); }
+    60% { transform: translate(66%, 46%) scale(1.16); }
+    80% { transform: translate(30%, 12%) scale(1.06); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes jpxAccB {
+    0% { transform: translate(0, 0) scale(1.1); }
+    25% { transform: translate(-46%, -30%) scale(0.88); }
+    50% { transform: translate(-14%, -66%) scale(1.24); }
+    75% { transform: translate(-62%, -18%) scale(1); }
+    100% { transform: translate(0, 0) scale(1.1); }
+}
+@keyframes jpxAccC {
+    0% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-42%, 36%) scale(1.18); }
+    50% { transform: translate(36%, -32%) scale(0.86); }
+    75% { transform: translate(-26%, -42%) scale(1.22); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+.jpx-account-card {
+    position: relative; z-index: 1;
+    width: min(92vw, 380px);
+    display: flex; flex-direction: column; gap: 0.7em;
+    padding: 2.2em 2em;
+    background: rgba(16, 15, 22, 0.72);
+    border: 1px solid rgba(147, 133, 245, 0.28);
+    border-radius: 18px;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+
+.jpx-account-logo-img {
+    display: block; width: clamp(220px, 32vw, 400px); max-width: 90%; height: auto; margin: 0 auto -0.1em;
+    filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.5));
+}
+.jpx-account-logo {
+    font-size: 1.5em; font-weight: 800; letter-spacing: 0.5px; text-align: center;
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.jpx-account-title { font-size: 1.3em; font-weight: 700; color: #fff; text-align: center; margin-top: 0; }
+.jpx-account-sub { font-size: 0.9em; color: #b9b6c6; text-align: center; margin-bottom: 0.6em; }
+.jpx-account-err {
+    font-size: 0.85em; color: #ffd0d0; text-align: center;
+    background: rgba(255, 60, 60, 0.14); border: 1px solid rgba(255, 60, 60, 0.4);
+    border-radius: 8px; padding: 0.45em 0.6em;
+}
+
+.jpx-account-input {
+    width: 100%; box-sizing: border-box;
+    padding: 0.8em 0.9em; font-size: 1em;
+    color: #fff; background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 10px;
+    outline: none; transition: border-color 0.15s;
+}
+.jpx-account-input:focus { border-color: #9385F5; }
+.jpx-account-input::placeholder { color: #8c889a; }
+
+.jpx-account-submit {
+    margin-top: 0.4em; padding: 0.85em; font-size: 1.02em; font-weight: 700;
+    color: #fff; cursor: pointer; border: 0; border-radius: 10px;
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5);
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32);
+    transition: filter 0.15s, transform 0.05s;
+}
+.jpx-account-submit:hover:not(:disabled) { filter: brightness(1.08); }
+.jpx-account-submit:active:not(:disabled) { transform: translateY(1px); }
+.jpx-account-submit:disabled { opacity: 0.6; cursor: default; }
+
+.jpx-account-submit--secondary {
+    margin-top: 0.55em; color: #e2def0; font-weight: 600;
+    background: transparent; border: 1.5px solid rgba(147, 133, 245, 0.5); box-shadow: none;
+}
+.jpx-account-submit--secondary:hover:not(:disabled) { filter: none; background: rgba(147, 133, 245, 0.14); border-color: #9385F5; }
+
+.jpx-account-hint {
+    font-size: 0.86em; color: #c7c3d6; line-height: 1.5; text-align: center;
+    margin-top: 1.05em; padding-top: 0.9em; border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+.jpx-account-hint strong { color: #efecf7; }
+
+.jpx-account-switch { font-size: 0.88em; color: #b9b6c6; text-align: center; margin-top: 0.4em; }
+.jpx-account-switch a { color: #A99CFF; cursor: pointer; font-weight: 600; }
+.jpx-account-switch a:hover { text-decoration: underline; }
+
+/* On successful sign-in, the card swipes out to the left (the server-select card then swipes in from
+   the right on the same shared aurora, so it reads as one screen). */
+@keyframes jpxAccOut { to { opacity: 0; transform: translateX(-64px); } }
+.jpx-account-card--exit { animation: jpxAccOut 0.34s cubic-bezier(0.4, 0, 1, 1) forwards; pointer-events: none; }
+
+/* Umbry eclipse mark above the wordmark */
+.jpx-account-mark { display: block; width: 130px !important; height: 130px !important; margin: 0 auto -26px !important; object-fit: contain; }
+
+/* first-run auto-detect status line */
+.jpx-account-detect {
+    font-size: 0.85rem;
+    text-align: center;
+    margin: -0.2em 0 0.7em;
+    color: rgba(255, 255, 255, 0.55);
+}
+.jpx-account-detect--found {
+    color: #46d38a;
+    font-weight: 600;
+}
+
+/* recovery code display (shown once after register / reset) */
+.jpx-account-code {
+    font: 700 1.5rem/1.35 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    letter-spacing: 0.12em;
+    color: var(--jpx-t-accent, #9385F5);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 0.7em 0.5em;
+    text-align: center;
+    user-select: all;
+    word-break: break-word;
+}
+.jpx-account-copy {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    padding: 0.55em 1em;
+    font-size: 0.92rem;
+    cursor: pointer;
+}
+.jpx-account-copy:hover { background: rgba(255, 255, 255, 0.14); }
+.jpx-account-copy--done, .jpx-account-copy--done:hover {
+    background: rgba(70, 211, 138, 0.18);
+    border-color: rgba(70, 211, 138, 0.55);
+    color: #46d38a;
+}
+
+// ---- server dropdown + remember-me + avatar profiles (2026-09-04) ----
+.jpx-account-select {
+    appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 2.2em;
+    background-image:
+        linear-gradient(45deg, transparent 50%, #b9b6c6 50%),
+        linear-gradient(135deg, #b9b6c6 50%, transparent 50%);
+    background-position: right 1.15em center, right 0.85em center;
+    background-size: 6px 6px, 6px 6px; background-repeat: no-repeat;
+}
+.jpx-account-select option { color: #111; }
+
+.jpx-account-remember {
+    display: flex; align-items: flex-start; gap: 0.55em; margin-top: 0.55em;
+    font-size: 0.84em; color: #c7c3d6; line-height: 1.4; cursor: pointer; text-align: left;
+}
+.jpx-account-remember input { margin-top: 0.12em; width: 16px; height: 16px; accent-color: #9385F5; cursor: pointer; flex: 0 0 auto; }
+
+.jpx-account-profiles { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.9em; margin: 0.6em 0 0.4em; }
+.jpx-account-profile {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.5em;
+    width: 92px; padding: 0.35em; background: transparent; border: 0; cursor: pointer;
+}
+.jpx-account-profile:disabled { opacity: 0.5; cursor: default; }
+.jpx-account-profile-av {
+    width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: #151228;
+    border: 2px solid transparent; transition: border-color 0.15s, transform 0.12s;
+}
+.jpx-account-profile:hover:not(:disabled) .jpx-account-profile-av { border-color: #9385F5; transform: translateY(-2px); }
+.jpx-account-profile-name { font-size: 0.78em; max-width: 92px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #b9b6c6; }
+.jpx-account-profile-x {
+    position: absolute; top: -2px; right: 8px; width: 20px; height: 20px; border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55); color: #fff; font-size: 14px; line-height: 20px; text-align: center;
+    opacity: 0; transition: opacity 0.15s;
+}
+.jpx-account-profile:hover .jpx-account-profile-x { opacity: 1; }
+.jpx-account-profile-plus,
+.jpx-account-profile--add .jpx-account-profile-av {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; color: #9385F5; border: 2px dashed rgba(147, 133, 245, 0.5);
+}
+
+.jpx-account-avgrid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.6em; margin: 0.6em 0;
+    max-height: 260px; overflow-y: auto; padding: 2px;
+}
+.jpx-account-avopt { padding: 0; background: transparent; border: 0; cursor: pointer; border-radius: 50%; line-height: 0; }
+.jpx-account-avopt img { width: 100%; border-radius: 50%; display: block; border: 2px solid transparent; transition: border-color 0.12s, transform 0.12s; }
+.jpx-account-avopt:hover img { transform: translateY(-2px); }
+.jpx-account-avopt.is-sel img { border-color: #FF9A4B; }
+.jpx-account-avopt--up {
+    display: flex; align-items: center; justify-content: center; aspect-ratio: 1;
+    border: 2px dashed rgba(147, 133, 245, 0.5); border-radius: 50%; color: #9385F5; font-size: 26px;
+}
+.jpx-account-avopt--up.is-sel { border-style: solid; border-color: #FF9A4B; }
+.jpx-account-avopt--up img { border: 0; }

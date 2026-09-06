@@ -1,0 +1,95 @@
+.scrollX {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+}
+
+.smoothScrollX {
+    scroll-behavior: smooth;
+}
+
+.hiddenScrollX,
+.layout-tv .scrollX {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.hiddenScrollX-forced {
+    overflow: -moz-scrollbars-none;
+}
+
+.hiddenScrollX::-webkit-scrollbar,
+.layout-tv .scrollX::-webkit-scrollbar {
+    height: 0 !important;
+    display: none;
+}
+
+.scrollY {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.smoothScrollY {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+.hiddenScrollY,
+.layout-tv .smoothScrollY {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+
+    /* Can't do this because it not only hides the scrollbar, but also prevents scrolling */
+
+    /* overflow: -moz-scrollbars-none; */
+}
+
+.hiddenScrollY-forced {
+    overflow: -moz-scrollbars-none;
+}
+
+.hiddenScrollY::-webkit-scrollbar,
+.layout-tv .smoothScrollY::-webkit-scrollbar,
+.layout-tv .scrollY::-webkit-scrollbar {
+    width: 0 !important;
+    display: none;
+}
+
+/* Umbry: a visible, styled VERTICAL scrollbar for the page (jellyfin hides all scrollbars TV-first,
+   which makes overflowing content look cut off). HORIZONTAL rows keep NO scrollbar — they scroll via
+   the white chevron buttons at the top-right of each row. */
+.layout-desktop .scrollY, .layout-desktop .smoothScrollY, .layout-desktop .hiddenScrollY {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(147, 133, 245, 0.55) rgba(255, 255, 255, 0.05);
+}
+.layout-desktop .scrollY::-webkit-scrollbar,
+.layout-desktop .smoothScrollY::-webkit-scrollbar,
+.layout-desktop .hiddenScrollY::-webkit-scrollbar { width: 11px !important; display: block !important; }
+.layout-desktop .scrollY::-webkit-scrollbar-thumb,
+.layout-desktop .smoothScrollY::-webkit-scrollbar-thumb,
+.layout-desktop .hiddenScrollY::-webkit-scrollbar-thumb {
+    background: rgba(147, 133, 245, 0.55); border-radius: 7px; border: 2px solid transparent; background-clip: content-box;
+}
+.layout-desktop .scrollY::-webkit-scrollbar-thumb:hover,
+.layout-desktop .smoothScrollY::-webkit-scrollbar-thumb:hover,
+.layout-desktop .hiddenScrollY::-webkit-scrollbar-thumb:hover { background: rgba(147, 133, 245, 0.85); background-clip: content-box; }
+.layout-desktop .scrollY::-webkit-scrollbar-track,
+.layout-desktop .smoothScrollY::-webkit-scrollbar-track,
+.layout-desktop .hiddenScrollY::-webkit-scrollbar-track { background: transparent; }
+
+/* Horizontal row scrollers: never show a scrollbar (the chevron buttons scroll them). */
+.scrollX::-webkit-scrollbar,
+.emby-scroller::-webkit-scrollbar,
+.itemsContainer.scrollX::-webkit-scrollbar { height: 0 !important; width: 0 !important; display: none !important; }
+.scrollX, .emby-scroller { scrollbar-width: none !important; }
+
+/* Umbry: hide the HORIZONTAL scrollbar under home rows (My Media, Continue Watching, etc.) — the
+   chevron buttons handle scrolling. `height:0` only kills the horizontal bar; vertical grids keep
+   their scrollbar. This catches the itemsContainer/emby-scroller the earlier .scrollX rule missed. */
+.homeSectionsContainer .itemsContainer::-webkit-scrollbar,
+.homeSectionsContainer .emby-scroller::-webkit-scrollbar,
+.verticalSection .itemsContainer::-webkit-scrollbar,
+.emby-scroller.scrollX::-webkit-scrollbar { height: 0 !important; display: none !important; }
+.homeSectionsContainer .itemsContainer,
+.homeSectionsContainer .emby-scroller { scrollbar-width: none !important; }

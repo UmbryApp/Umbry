@@ -1,0 +1,133 @@
+/* Umbry — visual effects for the Moonfin settings prefs. Driven by body classes / CSS vars
+   set in jpxPrefs.ts. Every block is inert unless its pref deviates from the default, so a stock
+   user sees no change. Confident selectors first; a few best-effort ones follow. */
+
+/* ---- Watched indicators (General Style > Watched Indicators) ---- */
+body.jpx-watched-never .playedIndicator,
+body.jpx-watched-never .countIndicator { display: none !important; }
+body.jpx-watched-unwatched .playedIndicator { display: none !important; }
+
+/* ---- Navbar opacity (Navigation > Navbar Opacity) — scales the pill's translucency ----
+   The nav keeps its dark design; the slider only controls how transparent it is. Every nav-pill
+   background rule (base + the glass theme override in jpxThemeTokens.scss) resolves to this same
+   dark+opacity value, so no theme can defeat the slider. */
+.jpx-nav-pill { background: rgba(18, 18, 24, calc(0.62 * var(--jpx-navbar-opacity, 1))) !important; }
+
+/* ---- Card display size (Home Screen > Card Display Size) — zoom reflows cleanly in Chromium ---- */
+.homeSectionsContainer .card,
+.itemsContainer.scrollSlider .card { zoom: var(--jpx-card-scale, 1); }
+
+/* ---- Home row padding (Home Screen > Home Row Padding) ---- */
+.homeSectionsContainer .verticalSection { margin-bottom: var(--jpx-row-padding, 1.6em) !important; }
+
+/* ---- Home rows style: modern = larger titles + more breathing room ---- */
+body.jpx-rows-modern .homeSectionsContainer .sectionTitle-cards { font-size: 1.35em; letter-spacing: 0.2px; }
+body.jpx-rows-modern .homeSectionsContainer .verticalSection { margin-bottom: calc(var(--jpx-row-padding, 1.6em) + 0.7em) !important; }
+
+/* ---- Details screen: hide technical details (Details Screen > Show Technical Details off) ---- */
+body.jpx-hide-tech-details .itemMiscInfoSecondary { display: none !important; }
+
+/* ---- Details screen: hide media description / spoiler control ---- */
+body.jpx-hide-overview .overview,
+body.jpx-hide-overview .detailPageOverview,
+body.jpx-hide-overview .detailsPageOverview,
+body.jpx-hide-overview .jpx-dh-overview,
+body.jpx-hide-overview .jpx-dh-readmore { display: none !important; }
+
+/* ---- Details screen: expanded tabs ---- */
+body.jpx-expanded-tabs .detailPageContent .emby-tabs-slider,
+body.jpx-expanded-tabs .libraryPage .emby-tabs-slider,
+body.jpx-expanded-tabs .jpx-tabbar,
+body.jpx-expanded-tabs .jpx-tabs { justify-content: space-around !important; width: 100% !important; }
+
+/* ---- Details screen: background blur (best-effort; scoped to detail wrappers) ----
+   Apply the blur to the .backdropImage child, never the position:fixed .backdropContainer:
+   a filter on a fixed, z-index:-1 layer behind scrolling content makes Chromium drop the
+   layer's backing store on scroll-away-and-return, painting a black banner. The var defaults
+   to 'none', so a stock user's detail backdrop carries no filter at all. */
+.detailPage .backdropContainer .backdropImage,
+/* .backdropContainer is inserted at BODY level (a sibling of the page), so the old
+   `.itemDetailPage .backdropContainer` descendant selector never matched. Scope by whether a detail
+   page is currently active using :has() on body: detail pages get the Details blur, everything else
+   (browsing) gets the Browsing blur. */
+body:has(.itemDetailPage:not(.hide)) .backdropContainer .backdropImage { filter: var(--jpx-details-filter, none); }
+
+/* ---- Interface style: Apple = softer/rounder, Material = crisp/flat ---- */
+body.jpx-ui-apple .card,
+body.jpx-ui-apple .cardBox,
+body.jpx-ui-apple .cardImageContainer,
+body.jpx-ui-apple .dialog,
+body.jpx-ui-apple .listItem { border-radius: 14px !important; }
+body.jpx-ui-material .card,
+body.jpx-ui-material .cardBox,
+body.jpx-ui-material .cardImageContainer,
+body.jpx-ui-material .dialog,
+body.jpx-ui-material .listItem { border-radius: 2px !important; }
+
+/* ---- Library page: hide backdrops while browsing (best-effort) ---- */
+/* backdropContainer is inserted at BODY level, so `.libraryPage .backdropContainer` never matched.
+   "Hide Backdrops while Browsing" = hide it on every page EXCEPT an active detail page. */
+body.jpx-hide-lib-backdrops:not(:has(.itemDetailPage:not(.hide))) .backdropContainer,
+body.jpx-hide-lib-backdrops:not(:has(.itemDetailPage:not(.hide))) .backdropContainer .backdropImage { opacity: 0 !important; }
+
+/* ---- Library page: hide media details under cards (best-effort) ---- */
+body.jpx-hide-lib-details .libraryPage .cardText-secondary,
+body.jpx-hide-lib-details .libraryPage .cardFooter .mediaInfoItem { display: none !important; }
+
+/* ---- SyncPlay (Playback > Enable SyncPlay) — hidden until the user enables it ---- */
+body:not(.jpx-syncplay-on) .headerSyncButton,
+body:not(.jpx-syncplay-on) button[aria-label*="SyncPlay"] { display: none !important; }
+
+/* ---- Additional Ratings (TMDB) badge injected on the detail page ---- */
+.jpx-tmdb-rating {
+    display: inline-flex; align-items: center; gap: 0.3em;
+    font-weight: 600; color: #fff;
+    background: rgba(1, 180, 228, 0.16); border: 1px solid rgba(1, 180, 228, 0.5);
+    border-radius: 8px; padding: 0.08em 0.55em; margin-left: 0.45em;
+}
+.jpx-tmdb-label { font-size: 0.72em; letter-spacing: 0.5px; color: #01b4e4; font-weight: 700; }
+.jpx-tmdb-star { color: #ffd23f; }
+
+/* ================================================================================
+   Fixes for settings that were set-but-never-consumed (audit 2026-08-27).
+   ================================================================================ */
+
+/* Focus Border Color — a real keyboard-focus ring in the chosen colour. The var was written by
+   both the theme (borders.focusBorderColor) and the "Focus Border Color" picker, but nothing read
+   it. :focus-visible keeps this off for mouse clicks and only shows it for keyboard/remote nav. */
+.card:focus-visible .cardBox,
+.cardBox:focus-visible,
+.emby-button:focus-visible,
+.jpx-dh-abtn:focus-visible,
+.jpx-nav-btn:focus-visible,
+.focusable:focus-visible,
+button.raised:focus-visible {
+    outline: var(--jpx-t-focus-border-width, 2px) solid var(--jpx-t-focus-border-color, var(--jpx-accent, #c235ff)) !important;
+    outline-offset: 2px !important;
+}
+
+/* UI Scaling (desktop) — zoom the whole interface. Classes were toggled but unstyled. */
+body.jpx-ui-small { zoom: 0.9; }
+body.jpx-ui-large { zoom: 1.1; }
+body.jpx-ui-xl { zoom: 1.22; }
+
+/* Home Row Padding — vertical gap between Home rows, for BOTH row styles (the var was previously
+   only referenced inside the Modern-rows rule, so Classic ignored it entirely). */
+.homeSectionsContainer .verticalSection { margin-bottom: var(--jpx-row-padding, 12px); }
+
+/* Browsing Background Blur — blur the backdrop image while browsing. Detail pages keep their own
+   blur via the more-specific `.itemDetailPage .backdropContainer .backdropImage` rule above.
+   Default var is unset -> `none`, so no filter layer exists at 0 (avoids Chromium's black-repaint). */
+body:not(:has(.itemDetailPage:not(.hide))) .backdropContainer .backdropImage { filter: var(--jpx-browse-filter, none); }
+
+/* OLED Mode — the token darkening (--jpx-t-background/surface/card) was correct but invisible
+   because the backdrop image sits over the page background and cards are transparent. Dim the
+   backdrop so the true-black background shows through; vivid also forces a pure-black body. */
+body.jpx-oled-subtle:not(:has(.itemDetailPage:not(.hide))) .backdropContainer { opacity: 0.5; }
+body.jpx-oled-vivid:not(:has(.itemDetailPage:not(.hide))) .backdropContainer { opacity: 0.28; }
+body.jpx-oled-vivid { background-color: #000 !important; }
+
+/* Interface Style — make Apple vs Material clearly distinct beyond corner radius: Apple gets a soft
+   floating shadow, Material a flat hairline. (Radius is set in the block near the top of this file.) */
+body.jpx-ui-apple .card .cardBox { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important; }
+body.jpx-ui-material .card .cardBox { box-shadow: 0 1px 0 rgba(0, 0, 0, 0.6) !important; }

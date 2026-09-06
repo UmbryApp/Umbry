@@ -1,0 +1,192 @@
+/* Umbry — Moonfin-style Server Administration dashboard. */
+
+.jpx-admin {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: flex;
+    background: var(--jpx-t-background, #0b0b10);
+    color: var(--jpx-t-on-background, #fff);
+    overflow: hidden;
+}
+
+/* Left rail */
+.jpx-admin-rail {
+    flex: 0 0 auto;
+    width: 240px;
+    padding: 1rem 0.75rem 2rem;
+    overflow-y: auto;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.02);
+}
+.jpx-admin-rail-group { margin-bottom: 1rem; }
+.jpx-admin-rail-header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--jpx-accent, #c235ff);
+    margin: 0.3rem 0.6rem 0.4rem;
+}
+.jpx-admin-rail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.55rem 0.7rem;
+    margin-bottom: 0.15rem;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #d7d7e0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.jpx-admin-rail-item .material-icons { font-size: 1.2rem; }
+.jpx-admin-rail-item:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.jpx-admin-rail-item.active {
+    background: var(--jpx-accent, #c235ff);
+    color: #fff;
+}
+
+/* Main pane */
+.jpx-admin-main {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 1.4rem 1.8rem 3rem;
+}
+.jpx-admin-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.4rem;
+}
+.jpx-admin-titlebar .material-icons { font-size: 1.6rem; color: var(--jpx-accent, #c235ff); }
+.jpx-admin-titlebar h1 { flex: 1 1 auto; font-size: 1.7rem; font-weight: 700; margin: 0; }
+.jpx-admin-close {
+    width: 2.4rem; height: 2.4rem;
+    border: 0; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05); color: #c9c9d3; cursor: pointer;
+}
+.jpx-admin-close:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+.jpx-admin-msg { padding: 2rem 0; color: #9a9aa8; display: flex; gap: 1rem; align-items: center; }
+
+/* KPI tiles */
+.jpx-admin-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.8rem;
+}
+.jpx-admin-kpi {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 1.2rem 1rem;
+    border-radius: 16px;
+    background: var(--jpx-t-surface, #16161c);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.jpx-admin-kpi .material-icons { font-size: 1.5rem; color: #8a8a98; margin-bottom: 0.3rem; }
+.jpx-admin-kpi b { font-size: 1.8rem; font-weight: 700; }
+.jpx-admin-kpi span:last-child { font-size: 0.85rem; color: #9a9aa8; }
+.jpx-admin-kpi.bad b { color: #ff5c5c; }
+.jpx-admin-kpi.bad .material-icons { color: #ff5c5c; }
+.jpx-admin-kpi.warn b { color: #ffb020; }
+
+.jpx-admin-section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--jpx-accent, #c235ff);
+    margin: 1.4rem 0 0.7rem;
+}
+
+.jpx-admin-card {
+    background: var(--jpx-t-surface, #16161c);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    padding: 1.1rem 1.3rem;
+}
+.jpx-admin-info > div {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0.35rem 0;
+}
+.jpx-admin-info span { flex: 0 0 5rem; color: #9a9aa8; }
+.jpx-admin-info b { font-weight: 600; }
+
+.jpx-admin-actions { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+.jpx-admin-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--jpx-t-surface, #16161c);
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.jpx-admin-btn .material-icons { font-size: 1.2rem; }
+.jpx-admin-btn:hover { border-color: var(--jpx-accent, #c235ff); background: rgba(255, 255, 255, 0.06); }
+
+/* Media overview */
+.jpx-admin-media {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+.jpx-admin-mediacard {
+    position: relative;
+    padding: 1.1rem 1.2rem;
+    border-radius: 16px;
+    background: var(--jpx-t-surface, #16161c);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    overflow: hidden;
+}
+.jpx-admin-media-label { display: block; font-size: 0.85rem; color: #9a9aa8; margin-bottom: 0.3rem; }
+.jpx-admin-media-count { display: block; font-size: 1.7rem; font-weight: 700; }
+.jpx-admin-media-ico {
+    position: absolute;
+    right: 0.9rem;
+    bottom: 0.7rem;
+    font-size: 1.7rem !important;
+    color: var(--jpx-accent, #c235ff);
+    opacity: 0.7;
+}
+
+/* Hide the floating nav pill while the admin dashboard is open (full-screen overlay). */
+body:has(.jpx-admin) .jpx-nav { display: none; }
+
+@media (max-width: 800px) {
+    .jpx-admin-rail { display: none; }
+}
+
+/* Back-to-Home button in the dashboard titlebar */
+.jpx-admin-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 14px;
+    padding: 7px 14px 7px 10px;
+    border: none;
+    border-radius: 999px;
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter 0.14s ease, transform 0.08s ease;
+    box-shadow: 0 2px 14px rgba(150, 80, 255, 0.35);
+}
+.jpx-admin-back:hover { filter: brightness(1.08); }
+.jpx-admin-back:active { transform: scale(0.97); }
+.jpx-admin-back .material-icons { font-size: 20px; }

@@ -1,0 +1,246 @@
+/* Umbry — Moonfin-style video OSD skin. Self-contained (the video page also runs in the
+   stable app, where the jpx detail styles aren't loaded). */
+
+/* ---- top bar: back + logo ---- */
+.jpx-osd-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1002;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6em;
+    padding: 0.9em 1em;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.jpx-osd-top > * { pointer-events: auto; }
+.jpx-osd-back {
+    border: 0;
+    background: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 0.35em;
+    display: flex;
+}
+.jpx-osd-back .material-icons { font-size: 1.7em; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8); }
+.jpx-osd-logo { max-height: 84px; max-width: 40vw; object-fit: contain; filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.7)); }
+.jpx-osd-title { color: #fff; font-size: 1.25rem; font-weight: 700; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); align-self: center; }
+
+/* ---- center transport ---- */
+.jpx-osd-center {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    gap: clamp(1.2em, 6vw, 3.2em);
+    transition: opacity 0.3s ease;
+}
+.jpx-osd-center .paper-icon-button-light,
+.jpx-osd-center .jpx-osd-prev {
+    background: none;
+    border: 0;
+    color: #fff;
+    cursor: pointer;
+}
+.jpx-osd-center .material-icons {
+    font-size: 2.6em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
+}
+.jpx-osd-center .btnPause .material-icons { font-size: 4em; }
+.jpx-osd-hidden { opacity: 0; pointer-events: none !important; }
+.jpx-osd-hidden > * { pointer-events: none !important; }
+
+/* ---- bottom block ---- */
+.jpx-osd .videoOsdBottom {
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.5) 55%, rgba(0, 0, 0, 0) 100%);
+    padding-bottom: 0.6em;
+}
+/* hide the stock title + stock button row (transport was reparented out of it) */
+.jpx-osd .osdMainTextContainer,
+.jpx-osd .osdControls > .buttons { display: none !important; }
+
+/* "Ends at" above the slider, right-aligned */
+.jpx-osd-ends {
+    display: block;
+    text-align: right;
+    padding: 0 0.4em 0.25em;
+    color: #fff;
+    font-weight: 600;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+}
+
+/* times sit at the slider's ends (stock flanks them already — just tone them) */
+.jpx-osd .osdPositionText,
+.jpx-osd .osdDurationText { color: rgba(255, 255, 255, 0.85); font-variant-numeric: tabular-nums; }
+
+/* themed scrubber: the theme's range colors drive the fill + thumb (Sean) */
+.jpx-osd .osdPositionSlider {
+    color: var(--jpx-t-accent, #9385F5) !important;
+}
+.jpx-osd .osdPositionSlider::-webkit-slider-thumb {
+    background: var(--jpx-t-accent, #9385F5) !important;
+}
+.jpx-osd .osdPositionSlider::-moz-range-thumb {
+    background: var(--jpx-t-accent, #9385F5) !important;
+}
+.jpx-osd .mdl-slider-background-lower { background: var(--jpx-t-accent, #9385F5) !important; }
+
+/* ---- bottom icon bar ---- */
+.jpx-osd-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.2em;
+    padding: 0.5em 0.6em 0.2em;
+}
+.jpx-osd-btn {
+    border: 0;
+    background: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 0.45em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    flex: 0 0 auto;
+}
+.jpx-osd-btn .material-icons { font-size: 1.6em; }
+.jpx-osd-btn:active { background: rgba(255, 255, 255, 0.14); }
+.jpx-osd-btn-on { color: var(--jpx-t-accent, #9385F5); }
+.jpx-osd-speed-lb { font-size: 1.05rem; font-weight: 700; }
+
+/* ---- frosted sheets ---- */
+.jpx-osd-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4vh 4vw;
+}
+.jpx-osd-card {
+    width: min(640px, 94vw);
+    max-height: 86vh;
+    overflow: hidden auto;
+    border-radius: 18px;
+    background: rgba(24, 22, 34, 0.72);
+    -webkit-backdrop-filter: blur(26px) saturate(1.25);
+    backdrop-filter: blur(26px) saturate(1.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6);
+    padding: 1em 0 0.4em;
+}
+.jpx-osd-card-title { font-size: 1.5rem; font-weight: 800; color: #fff; padding: 0.2em 1em 0.55em; }
+.jpx-osd-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8em;
+    width: 100%;
+    border: 0;
+    background: none;
+    color: #fff;
+    text-align: left;
+    padding: 0.9em 1.1em;
+    cursor: pointer;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.jpx-osd-row.selected { background: rgba(147, 133, 245, 0.2); }
+.jpx-osd-check { color: rgba(255, 255, 255, 0.45); }
+.jpx-osd-row.selected .jpx-osd-check { color: #3b82f6; }
+.jpx-osd-row-body { display: flex; flex-direction: column; min-width: 0; }
+.jpx-osd-row-main { font-size: 1.1rem; font-weight: 600; }
+.jpx-osd-row-sub { font-size: 0.85rem; color: rgba(255, 255, 255, 0.6); }
+.jpx-osd-empty { padding: 1em 1.2em; color: rgba(255, 255, 255, 0.65); }
+
+/* Playback Information rows */
+.jpx-osd-kv-group { padding: 0.8em 1.1em 0.3em; font-size: 1.15rem; font-weight: 800; color: #fff; }
+.jpx-osd-kv {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.4em;
+    padding: 0.32em 1.2em;
+    color: rgba(255, 255, 255, 0.75);
+}
+.jpx-osd-kv b { color: #fff; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+
+/* Cast & Crew circles */
+.jpx-osd-people {
+    display: flex;
+    gap: 1.1em;
+    overflow-x: auto;
+    padding: 0.4em 1.1em 1em;
+}
+.jpx-osd-person { flex: 0 0 auto; width: 108px; text-decoration: none; text-align: center; }
+.jpx-osd-person-img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 104px;
+    height: 104px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin: 0 auto 0.45em;
+}
+.jpx-osd-person-img .material-icons { font-size: 2.2em; color: rgba(255, 255, 255, 0.5); }
+.jpx-osd-person-name { display: block; color: #fff; font-weight: 700; font-size: 0.95rem; }
+.jpx-osd-person-role { display: block; color: rgba(255, 255, 255, 0.6); font-size: 0.82rem; }
+
+/* Moonfin has no app header over the player — our top bar owns back + logo. */
+body:has(#videoOsdPage:not(.hide)) .skinHeader,
+body:has(#videoOsdPage:not(.hide)) .MuiAppBar-root,
+body:has(#videoOsdPage:not(.hide)) .jpx-app-main > .MuiBox-root > .MuiToolbar-root,
+body:has(#videoOsdPage:not(.hide)) .MuiToolbar-root:has(> .MuiTypography-root) { display: none !important; }
+
+/* ---- Umbry: bottom-bar volume + "More" dropdown (declutters the old single-row of options) ---- */
+.jpx-osd-vol { display: flex; align-items: center; gap: 0.4em; }
+.jpx-osd-vol-slider {
+    -webkit-appearance: none; appearance: none; height: 4px; width: 96px; border-radius: 99px; outline: none; cursor: pointer;
+    background: linear-gradient(to right, var(--jpx-t-accent, #9385F5) var(--v, 100%), rgba(255, 255, 255, 0.25) var(--v, 100%));
+}
+.jpx-osd-vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #fff; cursor: pointer; }
+.jpx-osd-vol-slider::-moz-range-thumb { width: 13px; height: 13px; border: 0; border-radius: 50%; background: #fff; cursor: pointer; }
+
+.jpx-osd-more { position: relative; margin-left: auto; }
+.jpx-osd-more-drop {
+    display: none; position: absolute; right: 0; bottom: calc(100% + 0.55em);
+    min-width: 250px; max-height: 62vh; overflow-y: auto;
+    background: rgba(20, 16, 40, 0.72); -webkit-backdrop-filter: blur(28px) saturate(1.3); backdrop-filter: blur(28px) saturate(1.3);
+    border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; padding: 0.4em; box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.7);
+}
+.jpx-osd-more.open .jpx-osd-more-drop { display: block; }
+.jpx-osd-more-list { display: flex; flex-direction: column; }
+.jpx-osd-menu-item {
+    display: flex; align-items: center; gap: 0.8em; width: 100%; border: 0; background: none; color: #fff;
+    text-align: left; padding: 0.7em 0.9em; border-radius: 10px; cursor: pointer; font-size: 0.98rem;
+}
+.jpx-osd-menu-item:hover { background: rgba(255, 255, 255, 0.09); }
+.jpx-osd-menu-item .material-icons { font-size: 1.3em; opacity: 0.9; }
+.jpx-osd-menu-lb { flex: 1 1 auto; white-space: nowrap; }
+.jpx-osd-menu-item .jpx-osd-speed-lb { color: var(--jpx-t-accent, #9385F5); font-weight: 700; }
+.jpx-osd-menu-item.jpx-osd-btn-on .material-icons,
+.jpx-osd-menu-item.jpx-osd-btn-on .jpx-osd-menu-lb { color: var(--jpx-t-accent, #9385F5); }
+
+.jpx-osd-pbt {
+    display: flex;
+    align-items: center;
+    font-size: 0.82rem;
+    opacity: 0.9;
+    padding: 0.1rem 0.35rem;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+.jpx-osd-pbt-l { flex: 1; text-align: left; }
+.jpx-osd-pbt-c { flex: 1; text-align: center; }
+.jpx-osd-pbt-r { flex: 1; text-align: right; }
+.jpx-osd-pbt-above { margin-bottom: 0.1rem; }
+.jpx-osd-pbt-below { margin-top: 0.1rem; }

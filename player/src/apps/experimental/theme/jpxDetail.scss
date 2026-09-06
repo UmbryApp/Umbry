@@ -1,0 +1,1668 @@
+/* Umbry — Moonfin-style full-backdrop detail page.
+ *
+ * The stock detail page shows the backdrop as a short banner at the top with the info below it.
+ * Moonfin instead makes the WHOLE page the backdrop, with the logo, synopsis and controls sitting in
+ * a scrim that scrolls over the fixed image. This file re-skins the detail page to that look.
+ *
+ * Scoped to the mobile layout (which is what the phone/tablet apps use and what Moonfin targets);
+ * desktop keeps its poster-left layout but gains the same readable scrim. Everything is scoped to
+ * `.itemDetailPage` so no other screen is touched.
+ */
+
+/* ---------- MOBILE: full-viewport fixed backdrop ---------- */
+.layout-mobile .itemDetailPage {
+    /* The backdrop image element becomes a fixed, full-screen cover behind the content. */
+    #itemBackdrop.itemBackdrop {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh !important;
+        margin: 0;
+        background-size: cover;
+        background-position: center center;
+        background-attachment: scroll; /* `fixed` is unreliable on mobile browsers */
+        z-index: 0;
+
+        /* Gradient scrim so the overlaid text stays readable and the page fades to the theme bg. */
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(to bottom,
+                    rgba(0, 0, 0, 0.15) 0%,
+                    rgba(0, 0, 0, 0.35) 38%,
+                    rgba(0, 0, 0, 0.72) 66%,
+                    rgba(0, 0, 0, 0.92) 84%,
+                    var(--jpx-t-background, #000) 100%);
+        }
+    }
+
+    /* When there is no backdrop image, don't paint a fixed black slab. */
+    #itemBackdrop.itemBackdrop:not([style*="background-image"]) {
+        position: relative;
+        height: 0 !important;
+        &::after { display: none; }
+    }
+
+    /* The content wrapper scrolls OVER the fixed backdrop. Give it top space so it starts low on the
+       image (like Moonfin), and make every container transparent so the backdrop shows through. */
+    .detailPageWrapperContainer {
+        position: relative;
+        z-index: 1;
+        margin-top: 46vh;                 /* content begins below the visible hero portion */
+        background: transparent;
+    }
+    .detailPagePrimaryContainer,
+    .detailPagePrimaryContent,
+    .detailPageSecondaryContainer,
+    .detailRibbon,
+    .detailSection,
+    .mainDetailButtons {
+        background: transparent !important;
+    }
+
+    /* The small poster thumbnail is redundant when the backdrop is the hero — hide it. */
+    .detailImageContainer {
+        display: none !important;
+    }
+
+    /* Frosted-glass overview card (matches the home hero card). */
+    .detailSection > .overview,
+    .detailPagePrimaryContent .overview,
+    .detailPageOverviewContainer {
+        background: rgba(18, 16, 24, 0.34);
+        -webkit-backdrop-filter: blur(20px) saturate(1.2);
+        backdrop-filter: blur(20px) saturate(1.2);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 16px;
+        padding: 0.95em 1.05em;
+    }
+
+    /* Readable text over the image. */
+    .itemDetailPage .nameContainer,
+    .detailPagePrimaryContent,
+    .detailTextContainer {
+        text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+    }
+}
+
+/* ---------- DESKTOP: keep poster-left layout, add the readable scrim ---------- */
+/* The desktop backdrop is already a fixed full-viewport layer (.backdropContainer, z-index -1).
+   Just deepen the bottom scrim so the scrolling content stays legible over it. */
+.layout-desktop .itemDetailPage .detailPageWrapperContainer,
+.layout-tv .itemDetailPage .detailPageWrapperContainer {
+    position: relative;
+    z-index: 1;
+}
+
+/* =====================================================================================
+ * Umbry — Moonfin-match pass for the mobile detail header.
+ * Left-aligned logo/title, a big white Play button, circular frosted action buttons with
+ * labels, and circular cast avatars — to mirror Moonfin's layout.
+ * ===================================================================================== */
+.layout-mobile .itemDetailPage {
+
+    /* ---- Left-align the whole header block (Moonfin is left-aligned) ---- */
+    .detailRibbon,
+    .infoWrapper,
+    .nameContainer,
+    .itemName,
+    .itemMiscInfo,
+    .detailPagePrimaryContent,
+    .detailSectionContent {
+        text-align: left !important;
+        align-items: flex-start !important;
+    }
+    .nameContainer,
+    .itemMiscInfo-primary,
+    .itemMiscInfo-secondary,
+    .itemGenres {
+        justify-content: flex-start !important;
+    }
+
+    /* ---- Logo (if the item has one) shown big + left; hide the text title when a logo is up ---- */
+    .detailLogo:not(.hide) {
+        display: block;
+        height: 108px;
+        max-width: 74vw;
+        margin: 0 0 0.35em;
+        background-position: left center;
+        background-size: contain;
+        background-repeat: no-repeat;
+    }
+    .detailLogo:not(.hide) + .detailPageWrapperContainer .nameContainer .itemName {
+        display: none;
+    }
+    .nameContainer .itemName,
+    .nameContainer h1 {
+        font-size: clamp(2rem, 8vw, 3rem);
+        font-weight: 800;
+        line-height: 1.05;
+    }
+
+    /* ---- Metadata middot rows stay left, readable ---- */
+    .itemMiscInfo {
+        color: #d6d6de;
+    }
+
+    /* ---- Action buttons row ---- */
+    .mainDetailButtons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7em 1.4em;
+        justify-content: flex-start !important;
+        margin-top: 0.4em;
+    }
+
+    /* Big white full-width Play button (the visible play/resume button). */
+    .mainDetailButtons .btnPlay:not(.hide),
+    .mainDetailButtons .btnReplay:not(.hide) {
+        order: -1;
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        margin: 0 0 0.5em;
+        border-radius: 999px;
+        background: #fff !important;
+
+        .detailButton-content {
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45em;
+            padding: 0.7em 1em;
+        }
+        .detailButton-icon {
+            color: #000 !important;
+            font-size: 1.5em;
+        }
+        &::after {
+            content: 'Play';
+            color: #000;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+    }
+
+    /* Every other action button -> circular frosted icon with a small label beneath (from its title). */
+    .mainDetailButtons .detailButton:not(.btnPlay):not(.btnReplay):not(.hide) {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.4em;
+        width: auto;
+        height: auto;
+        background: transparent !important;
+
+        .detailButton-content {
+            width: 3.1em;
+            height: 3.1em;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .detailButton-icon {
+            color: #fff;
+            font-size: 1.35em;
+        }
+        &::after {
+            content: attr(title);
+            font-size: 0.72rem;
+            color: #cfcfd8;
+            max-width: 6em;
+            text-align: center;
+            line-height: 1.1;
+        }
+    }
+
+    /* ---- Circular cast avatars (Moonfin uses round headshots) ---- */
+    #castContent .card,
+    #guestCastContent .card {
+        .cardImageContainer,
+        .cardScalable,
+        .cardPadder-portrait,
+        .cardBox {
+            border-radius: 50% !important;
+        }
+        .cardImageContainer {
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+        }
+        .cardPadder-portrait {
+            padding-bottom: 100% !important;
+        }
+        .cardBox {
+            background: transparent !important;
+            border: 0 !important;
+        }
+        .cardText {
+            text-align: center !important;
+        }
+        .cardText-first {
+            color: #fff !important;
+            font-weight: 600;
+        }
+    }
+
+    /* ---- Section titles left + white ---- */
+    .verticalSection .sectionTitle {
+        text-align: left;
+        color: #fff;
+        font-weight: 800;
+    }
+}
+
+/* Moonfin-match: force LEFT alignment of the mobile header + reposition the logo bottom-left. */
+.layout-mobile .itemDetailPage .detailRibbon,
+.layout-mobile .itemDetailPage .infoWrapper {
+    align-items: flex-start !important;
+    text-align: left !important;
+}
+.layout-mobile .itemDetailPage .itemMiscInfo,
+.layout-mobile .itemDetailPage .itemMiscInfo-primary,
+.layout-mobile .itemDetailPage .itemMiscInfo-secondary,
+.layout-mobile .itemDetailPage .nameContainer {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    text-align: left !important;
+}
+.layout-mobile .itemDetailPage .mainDetailButtons {
+    justify-content: flex-start !important;
+}
+/* Logo: large, left, sitting just above the metadata (was top:10vh right:25vw). */
+.layout-mobile .itemDetailPage .detailLogo:not(.hide) {
+    top: 33vh !important;
+    left: 4vw !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: auto !important;
+    height: 104px !important;
+    max-width: 74vw !important;
+    background-position: left bottom !important;
+}
+
+/* ===== Umbry custom Moonfin-style detail header (mobile) ===== */
+
+/* When the custom header is active, hide the stock header block + the duplicated
+   tagline/overview/genres (my header renders those). Keep track selects, cast, related. */
+.layout-mobile .jpx-custom-detail .detailLogo,
+.layout-mobile .jpx-custom-detail .detailRibbon,
+.layout-mobile .jpx-custom-detail .detailSectionContent > .itemGenres,
+.layout-mobile .jpx-custom-detail .detailSectionContent > .tagline,
+.layout-mobile .jpx-custom-detail .detailSectionContent > .overview,
+.layout-mobile .jpx-custom-detail .detailSectionContent > .overview-controls {
+    display: none !important;
+}
+/* my header supplies the top spacing, so the stock content wrapper starts right after it */
+.layout-mobile .jpx-custom-detail .detailPageWrapperContainer {
+    margin-top: 0 !important;
+}
+
+.jpx-detail-header {
+    position: relative;
+    z-index: 1;
+    margin-top: 44vh;
+    padding: 0 5vw 0.4em;
+    color: #fff;
+    text-align: left;
+}
+
+/* logo/title + the multi-version accent tag sit on one row */
+.jpx-dh-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    flex-wrap: wrap;
+    margin: 0 0 0.5em;
+}
+.jpx-dh-head .jpx-dh-logo,
+.jpx-dh-head .jpx-dh-title { margin-bottom: 0; }
+
+/* Multi-version affordance — theme-accent tag beside the title, matching the accent Version button */
+.jpx-dh-vtag {
+    align-self: center;
+    padding: 0.3em 0.75em;
+    border-radius: 8px;
+    border: 1px solid var(--jpx-accent, #c235ff);
+    background: rgba(194, 53, 255, 0.12);
+    background: color-mix(in srgb, var(--jpx-accent, #c235ff) 12%, transparent);
+    color: var(--jpx-accent, #c235ff);
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+.jpx-dh-vtag:hover { background: color-mix(in srgb, var(--jpx-accent, #c235ff) 22%, transparent); }
+
+.jpx-dh-logo {
+    display: block;
+    max-height: 110px;
+    max-width: 74vw;
+    object-fit: contain;
+    object-position: left bottom;
+    margin: 0 0 0.5em;
+    filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.6));
+}
+/* Dark-logo scrim — some title logos are near-black transparent PNGs that disappear on a dark
+   backdrop. jpxTagDarkLogo() (jpxDetailHeader.js) samples the logo's opaque-pixel luminance and,
+   only when it's genuinely dark, adds .jpx-logo-dark. The background sits BEHIND the PNG art (and
+   shows through its transparent margins), so the logo art itself stays crisp on a soft frosted pill.
+   Light logos never get the class, so they're untouched. */
+.jpx-dh-logo.jpx-logo-dark {
+    padding: 0.35em 0.6em;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.16);
+    -webkit-backdrop-filter: blur(10px) saturate(1.1);
+    backdrop-filter: blur(10px) saturate(1.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+    /* soften the drop-shadow — the frosted pill already gives the logo its lift */
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.35));
+}
+
+.jpx-dh-title {
+    font-size: clamp(2rem, 8vw, 3rem);
+    font-weight: 800;
+    line-height: 1.05;
+    margin: 0 0 0.4em;
+    text-shadow: 0 3px 20px rgba(0, 0, 0, 0.7);
+}
+
+.jpx-dh-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5em;
+    color: #d6d6de;
+    font-size: 1rem;
+    margin-bottom: 0.5em;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+.jpx-dh-sep { opacity: 0.5; }
+.jpx-dh-cert {
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 5px;
+    padding: 0.02em 0.4em;
+    font-size: 0.85em;
+}
+.jpx-dh-rt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+
+    .material-icons { font-size: 1.1em; }
+}
+
+.jpx-dh-genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    color: #cfcfd8;
+    font-size: 0.98rem;
+    margin-bottom: 0.75em;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* Quality badges (4K / HDR10 / Dolby Vision / Atmos) — clean neutral technical chips, à la Moonfin.
+   Empty when the source has nothing notable; the flex gap collapses so no gap shows. */
+.jpx-dh-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45em;
+    margin-bottom: 0.9em;
+
+    &:empty { display: none; }
+}
+/* All quality badges (4K / HDR / Dolby Vision / Atmos) carry the theme accent, uniform. */
+.jpx-dh-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+    line-height: 1;
+    color: #fff;
+    padding: 0.42em 0.62em;
+    border-radius: 6px;
+    border: 1px solid color-mix(in srgb, var(--jpx-accent, #c235ff) 55%, transparent);
+    background: color-mix(in srgb, var(--jpx-accent, #c235ff) 16%, rgba(255, 255, 255, 0.04));
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    text-shadow: none;
+}
+
+.jpx-dh-crating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    margin-bottom: 0.85em;
+
+    .material-icons { color: #f5c518; font-size: 1.7em; }
+    .jpx-dh-crating-txt { line-height: 1.1; }
+    b { font-size: 1.1rem; }
+    small { display: block; color: #b9b6c6; font-size: 0.72rem; }
+}
+
+.jpx-dh-tagline {
+    font-style: italic;
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin: 0 0 0.75em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+}
+
+.jpx-dh-overview-card {
+    background: rgba(18, 16, 24, 0.34);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    backdrop-filter: blur(20px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 1em 1.1em;
+    margin-bottom: 1.15em;
+}
+.jpx-dh-overview {
+    margin: 0;
+    color: #e6e6ee;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.jpx-dh-overview-card.expanded .jpx-dh-overview {
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    overflow: visible;
+}
+.jpx-dh-readmore {
+    display: inline-block;
+    margin-top: 0.5em;
+    color: #7db6ff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.jpx-dh-play {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45em;
+    padding: 0.85em;
+    margin: 0 0 1.15em;
+    border: 0;
+    border-radius: 999px;
+    background: #fff;
+    color: #000;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+
+    .material-icons { font-size: 1.5em; }
+}
+.jpx-dh-play:active { transform: translateY(1px); }
+
+.jpx-dh-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em 1.4em;
+    align-items: flex-start;
+}
+.jpx-dh-abtn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4em;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: #fff;
+}
+.jpx-dh-abtn-ic {
+    width: 3.2em;
+    height: 3.2em;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .material-icons { font-size: 1.4em; }
+}
+.jpx-dh-abtn-lb {
+    font-size: 0.74rem;
+    color: #cfcfd8;
+    max-width: 6.5em;
+    text-align: center;
+    line-height: 1.1;
+}
+.jpx-dh-abtn:active .jpx-dh-abtn-ic { background: rgba(255, 255, 255, 0.16); }
+
+/* Version button (highlighted) = accent ring + accent icon, no fill — the circle body keeps the
+   default translucent look, only the border and icon take the theme colour. */
+.jpx-dh-abtn-accent .jpx-dh-abtn-ic {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: var(--jpx-accent, #c235ff);
+    color: var(--jpx-accent, #c235ff);
+    box-shadow: inset 0 0 0 1px var(--jpx-accent, #c235ff);
+}
+.jpx-dh-abtn-accent:active .jpx-dh-abtn-ic { background: rgba(255, 255, 255, 0.14); }
+
+/* secondary buttons appear only after More is tapped */
+.jpx-dh-abtn-more { display: none; }
+.jpx-detail-header.jpx-dh-expanded .jpx-dh-abtn-more { display: inline-flex; }
+
+/* Moonfin-match: perfect-circle cast avatars + tidy names. */
+.layout-mobile #castContent .card,
+.layout-mobile #guestCastContent .card {
+    width: 30vw !important;
+    max-width: 128px !important;
+}
+.layout-mobile #castContent .card .cardScalable,
+.layout-mobile #castContent .card .cardPadder-portrait,
+.layout-mobile #guestCastContent .card .cardScalable,
+.layout-mobile #guestCastContent .card .cardPadder-portrait {
+    padding-bottom: 100% !important;
+    height: 0 !important;
+}
+.layout-mobile #castContent .card .cardImageContainer,
+.layout-mobile #guestCastContent .card .cardImageContainer {
+    position: absolute !important;
+    inset: 0 !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    background-size: cover !important;
+    background-position: center center !important;
+}
+.layout-mobile #castContent .card .cardText,
+.layout-mobile #guestCastContent .card .cardText {
+    text-align: center !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    padding: 0 0.2em;
+}
+.layout-mobile #castContent .card .cardText-first,
+.layout-mobile #guestCastContent .card .cardText-first {
+    color: #fff !important;
+    font-weight: 600;
+}
+
+/* ===== Umbry Moonfin-style tabbed content area ===== */
+/* Hide the stock stacked sections the tabs replace. */
+.jpx-custom-tabs #castCollapsible,
+.jpx-custom-tabs #guestCastCollapsible,
+.jpx-custom-tabs #similarCollapsible,
+.jpx-custom-tabs #scenesCollapsible,
+.jpx-custom-tabs .itemDetailsGroup,
+.jpx-custom-tabs .detailsGroup,
+.jpx-custom-tabs .itemTags,
+.jpx-custom-tabs .itemExternalLinks,
+.jpx-custom-tabs #itemMediaInfoContent,
+.jpx-custom-tabs .mediaInfoContent {
+    display: none !important;
+}
+
+.jpx-tabs {
+    margin-top: 1.4em;
+    padding: 0 0 2em;
+}
+
+.jpx-tabbar {
+    display: flex;
+    gap: 0.3em;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    padding: 0.3em;
+    margin-bottom: 1.2em;
+}
+.jpx-tabbar::-webkit-scrollbar { display: none; }
+.jpx-tab {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: #cfcfd8;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.55em 1.15em;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.jpx-tab.active {
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+}
+
+/* Cast / Crew — horizontal row of circular avatars */
+.jpx-tab-people {
+    display: flex;
+    gap: 1em;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.5em;
+}
+.jpx-tab-people::-webkit-scrollbar { display: none; }
+.jpx-tab-person {
+    flex: 0 0 auto;
+    width: 28vw;
+    max-width: 120px;
+    text-align: center;
+    color: inherit;
+    text-decoration: none;
+}
+.jpx-tab-avatar {
+    width: 28vw;
+    height: 28vw;
+    max-width: 120px;
+    max-height: 120px;
+    margin: 0 auto 0.5em;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center top;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+.jpx-tab-avatar-none {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .material-icons { font-size: 2.4em; color: #8a8a95; }
+}
+.jpx-tab-pname { color: #fff; font-weight: 600; font-size: 0.92rem; line-height: 1.15; }
+.jpx-tab-psub { color: #b9b6c6; font-size: 0.8rem; line-height: 1.1; margin-top: 0.15em; }
+
+/* Studios */
+.jpx-tab-studios { display: flex; flex-wrap: wrap; gap: 0.8em; }
+.jpx-tab-studio {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 1.5em 1.2em;
+    font-weight: 700;
+    color: #cfcfd8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 42vw;
+    text-align: center;
+}
+
+/* Chapters */
+.jpx-tab-chapters { display: flex; gap: 0.9em; overflow-x: auto; scrollbar-width: none; }
+.jpx-tab-chapters::-webkit-scrollbar { display: none; }
+.jpx-tab-chapter { flex: 0 0 auto; width: 42vw; max-width: 210px; }
+.jpx-tab-chapter-img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255, 255, 255, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .material-icons { color: #777; }
+}
+.jpx-tab-chapter-name { color: #fff; font-size: 0.85rem; margin-top: 0.4em; }
+.jpx-tab-chapter-time { color: #b9b6c6; font-size: 0.78rem; }
+
+/* Details — File Information */
+.jpx-tab-details { color: #fff; }
+.jpx-tab-fi-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.7em; }
+.jpx-tab-fi-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 1em;
+    margin-bottom: 1.1em;
+}
+.jpx-tab-fi-name { font-weight: 700; font-size: 1.05rem; }
+.jpx-tab-fi-sub { color: #b9b6c6; margin-top: 0.3em; }
+.jpx-tab-fi-row { display: flex; gap: 1em; margin-bottom: 0.85em; }
+.jpx-tab-fi-k { color: #9c99a9; min-width: 5.5em; }
+.jpx-tab-fi-v { color: #fff; flex: 1; }
+
+/* Similar — poster grid */
+.jpx-tab-similar-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.9em; }
+.jpx-tab-simcard { text-decoration: none; color: #fff; }
+.jpx-tab-simposter {
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.jpx-tab-simname {
+    font-size: 0.8rem;
+    margin-top: 0.35em;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.jpx-tab-loading,
+.jpx-tab-empty { color: #b9b6c6; padding: 1em 0; }
+
+/* Similar grid -> true 3 columns; similar titles white (not accent). */
+.jpx-tab-similar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.jpx-tab-simname { color: #fff !important; }
+
+/* Track selectors move off-screen (still clickable): Video/Audio now live ONLY in the Details tab,
+   and the Subtitles button clicks the subtitle select to open its picker dialog. */
+.jpx-custom-detail .trackSelections {
+    position: absolute !important;
+    left: -9999px !important;
+    top: 0 !important;
+    max-width: 100vw;
+}
+/* Similar grid -> true 3 columns; similar titles white (not accent). */
+.jpx-tab-similar-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.jpx-tab-simname { color: #fff !important; }
+
+/* ---- Moonfin detail polish pass ---- */
+
+/* 1) Smaller cast/crew avatars. */
+.jpx-tab-person { width: 22vw !important; max-width: 94px !important; }
+.jpx-tab-avatar {
+    width: 22vw !important; height: 22vw !important;
+    max-width: 94px !important; max-height: 94px !important;
+}
+
+/* 2) No hard right edge — horizontal rows go full-bleed so items scroll off the screen edge. */
+.jpx-tab-people,
+.jpx-tab-chapters {
+    margin-left: -5vw;
+    margin-right: -5vw;
+    padding-left: 5vw;
+    padding-right: 5vw;
+}
+
+/* 4) Fade to black: the header carries a gradient that shows the backdrop up top and fades to the
+      theme background as the content scrolls down; everything below the header is solid. */
+.jpx-detail-header { position: relative; }
+.jpx-detail-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(to bottom,
+        rgba(0, 0, 0, 0) 0,
+        rgba(0, 0, 0, 0) 4.5em,
+        var(--jpx-t-background, #0b0b10) 20em);
+    pointer-events: none;
+}
+.layout-mobile .jpx-custom-detail .detailPageWrapperContainer {
+    background: var(--jpx-t-background, #0b0b10) !important;
+}
+
+/* Subtitle-track picker dialog (Moonfin-style). */
+.jpx-sub-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+.jpx-sub-card {
+    width: min(92vw, 420px);
+    max-height: 80vh;
+    overflow-y: auto;
+    background: rgba(24, 22, 30, 0.96);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 1.4em 1em 0.8em;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+.jpx-sub-title { font-size: 1.6rem; font-weight: 800; color: #fff; padding: 0 0.4em 0.6em; }
+.jpx-sub-list { display: flex; flex-direction: column; }
+.jpx-sub-item {
+    display: flex;
+    align-items: center;
+    gap: 0.9em;
+    width: 100%;
+    padding: 0.95em 0.6em;
+    background: transparent;
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    color: #fff;
+    font-size: 1.15rem;
+    text-align: left;
+    cursor: pointer;
+}
+.jpx-sub-radio {
+    flex: 0 0 auto;
+    width: 1.3em;
+    height: 1.3em;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+}
+.jpx-sub-item.selected {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+}
+.jpx-sub-item.selected .jpx-sub-radio {
+    border-color: var(--jpx-accent, #c235ff);
+    background: radial-gradient(circle, var(--jpx-accent, #c235ff) 42%, transparent 46%);
+}
+.jpx-sub-cancel { color: #c9c7d2; }
+
+/* ==== Moonfin match v2 ==== */
+
+/* Keep the backdrop VISIBLE with a gradient scrim (revert the flat black). */
+.jpx-detail-header::before { background: none !important; }
+.layout-mobile .jpx-custom-detail .detailPageWrapperContainer { background: transparent !important; }
+.layout-mobile .itemDetailPage #itemBackdrop.itemBackdrop::after {
+    background: linear-gradient(to bottom,
+        rgba(0, 0, 0, 0.12) 0%,
+        rgba(0, 0, 0, 0.38) 42%,
+        rgba(0, 0, 0, 0.68) 78%,
+        rgba(0, 0, 0, 0.80) 100%) !important;
+}
+
+/* Overview: no box — plain text over the backdrop. */
+.jpx-dh-overview-card {
+    background: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 0 !important;
+    padding: 0 !important;
+    margin-bottom: 1.1em !important;
+}
+.jpx-dh-overview { text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8); }
+
+/* Read More -> blue (beats the global accent-link color). */
+.jpx-dh-readmore { color: var(--jpx-accent, #A99CFF) !important; }
+
+/* Rating badges row: Community Rating + Rotten Tomatoes. */
+.jpx-dh-ratings { display: flex; gap: 1.6em; margin-bottom: 0.9em; flex-wrap: wrap; }
+.jpx-dh-rate { display: inline-flex; align-items: center; gap: 0.4em; }
+.jpx-dh-rate-star { color: #f5c518; font-size: 1.7em; }
+.jpx-dh-rate-rt { font-size: 1.4em; line-height: 1; }
+.jpx-dh-rate-txt { line-height: 1.1; }
+.jpx-dh-rate-txt b { font-size: 1.1rem; color: #fff; }
+.jpx-dh-rate-txt small { display: block; color: #b9b6c6; font-size: 0.72rem; }
+
+/* Subtitle dialog: two-line items (main + codec/internal note). */
+.jpx-sub-body { display: flex; flex-direction: column; align-items: flex-start; }
+.jpx-sub-main { font-size: 1.12rem; }
+.jpx-sub-note { font-size: 0.85rem; color: #9c99a9; margin-top: 0.1em; }
+
+/* ==== Moonfin match v3 ==== */
+
+/* Soft right-edge fade on horizontal rows so items don't hard-cut at the screen edge. */
+.jpx-tab-people,
+.jpx-tab-chapters {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 15vw), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 15vw), transparent 100%);
+}
+
+/* Subtitle dialog: thinner + less solid (backdrop shows through). */
+.jpx-sub-overlay { background: rgba(0, 0, 0, 0.4) !important; }
+.jpx-sub-card {
+    width: min(85vw, 356px) !important;
+    background: rgba(22, 20, 28, 0.52) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(1.3) !important;
+    backdrop-filter: blur(30px) saturate(1.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    padding: 1.05em 0.85em 0.55em !important;
+}
+.jpx-sub-title { font-size: 1.32rem !important; padding: 0 0.3em 0.45em !important; }
+.jpx-sub-item { padding: 0.66em 0.5em !important; }
+.jpx-sub-main { font-size: 1.04rem !important; }
+.jpx-sub-note { font-size: 0.8rem !important; }
+.jpx-sub-radio { width: 1.15em !important; height: 1.15em !important; }
+
+/* =====================================================================================
+ * jpxDetailDesktop — extend the Moonfin custom detail header to desktop (>=960px).
+ * Mobile keeps its full-width white Play pill + collapsed action row; desktop mirrors
+ * Moonfin's wide layout: unboxed left-aligned text, a circular accent Play inline with
+ * the (all-expanded) circular action buttons, full-width pill tabs, and a wide poster grid.
+ * ===================================================================================== */
+
+/* Hide the stock header wherever the custom header is active (mobile gates this on
+   .layout-mobile; desktop needs it too). Safe: .jpx-custom-detail is only set on success. */
+.jpx-custom-detail .detailLogo,
+.jpx-custom-detail .detailRibbon {
+    display: none !important;
+}
+
+@media (min-width: 960px) {
+    .jpx-custom-detail .detailPageWrapperContainer { margin-top: 0 !important; }
+
+    .jpx-detail-header {
+        margin-top: 0;
+        padding: 12vh 4vw 2.5em;
+    }
+
+    /* Logo / title scale up on desktop */
+    .jpx-detail-header .jpx-dh-logo { max-height: 74px; max-width: 26vw; margin-bottom: 0.45em; }
+    .jpx-detail-header .jpx-dh-title { font-size: clamp(1.7rem, 2.6vw, 2.4rem); }
+
+    /* Constrain the reading column so the overview wraps ~half width, like Moonfin */
+    .jpx-detail-header .jpx-dh-meta,
+    .jpx-detail-header .jpx-dh-genres,
+    .jpx-detail-header .jpx-dh-ratings,
+    .jpx-detail-header .jpx-dh-tagline,
+    .jpx-detail-header .jpx-dh-overview-card { max-width: 620px; }
+
+    /* Overview is unboxed on desktop (no frosted card) */
+    .jpx-detail-header .jpx-dh-overview-card {
+        background: none !important;
+        border: 0 !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        padding: 0 !important;
+    }
+    .jpx-detail-header .jpx-dh-overview { font-size: 1.05rem; -webkit-line-clamp: 3; line-clamp: 3; }
+
+    /* ---- controls row: circular accent Play sitting inline with the action buttons ---- */
+    .jpx-detail-header .jpx-dh-play {
+        display: inline-flex;
+        width: 2.9em;
+        height: 2.9em;
+        padding: 0;
+        margin: 0 1.1em 0 0;
+        border-radius: 50%;
+        /* highlighted = accent ring + accent icon, no accent fill */
+        background: rgba(255, 255, 255, 0.07) !important;
+        color: var(--jpx-t-accent, #c235ff);
+        box-shadow: inset 0 0 0 2px var(--jpx-t-accent, #c235ff);
+        vertical-align: top;
+
+        .material-icons { font-size: 1.4em; color: var(--jpx-t-accent, #c235ff); }
+        span:not(.material-icons) { display: none; }   /* hide the "Play" text label */
+    }
+    .jpx-detail-header .jpx-dh-actions {
+        display: inline-flex;
+        vertical-align: top;
+        flex-wrap: wrap;
+        gap: 0.6em 1.3em;
+        margin-top: 0;
+    }
+    /* Desktop shows every action at once — reveal the "More" set and drop the toggle. */
+    .jpx-detail-header .jpx-dh-abtn-more { display: inline-flex !important; }
+    .jpx-detail-header .jpx-dh-abtn-toggle { display: none !important; }
+    .jpx-detail-header .jpx-dh-abtn-ic { width: 2.9em; height: 2.9em; }
+    .jpx-detail-header .jpx-dh-abtn-lb { font-size: 0.72rem; }
+
+    /* ---- tabs + content span the full width ---- */
+    .jpx-custom-detail .jpx-tabs { padding: 0 0 3em; }
+    .jpx-custom-detail .jpx-tabbar { max-width: max-content; }
+
+    /* cast/crew avatars a touch larger; keep the soft right-edge fade + horizontal scroll */
+    .jpx-custom-detail .jpx-tab-avatar { width: 120px; height: 120px; }
+    .jpx-custom-detail .jpx-tab-person { width: 120px; }
+
+    /* Similar: many columns like Moonfin's wide grid */
+    .jpx-custom-detail .jpx-tab-similar-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+        gap: 1.1em 1.2em;
+    }
+    .jpx-custom-detail .jpx-tab-simname { font-size: 0.85rem; }
+}
+
+/* =====================================================================================
+ * jpxDetailDesktop2 — desktop polish: hide the leftover stock poster/overview that the
+ * mobile hide-rules (layout-mobile scoped) don't cover, pull the header up to the top
+ * like Moonfin, and lay a left+bottom scrim over the backdrop so the text reads cleanly.
+ * ===================================================================================== */
+@media (min-width: 960px) {
+    /* header sits near the top (mobile uses a 44vh hero offset; desktop doesn't) */
+    .jpx-custom-detail .jpx-detail-header {
+        margin-top: 0 !important;
+        padding: 13vh 4vw 2.5em;
+    }
+
+    /* hide the stock poster + duplicated tagline/overview/genres left over below the tabs */
+    .jpx-custom-detail .detailImageContainer,
+    .jpx-custom-detail .detailPagePrimaryContent .detailImageContainer,
+    .jpx-custom-detail .detailSectionContent > .itemGenres,
+    .jpx-custom-detail .detailSectionContent > .tagline,
+    .jpx-custom-detail .detailSectionContent > .overview,
+    .jpx-custom-detail .detailSectionContent > .overview-controls,
+    .jpx-custom-detail .detailPagePrimaryContent > .nameContainer {
+        display: none !important;
+    }
+
+    /* darken the backdrop: heavy on the left (behind the text) + bottom (into the black),
+       fading to clear on the right so the artwork stays visible — Moonfin's look. Uses the
+       theme background colour so it blends seamlessly into the content below. */
+    /* The visible desktop backdrop is a FIXED full-viewport layer (.backdropContainer, z-index -1);
+       #itemBackdrop is only a transparent 40vh spacer, so scrim the whole viewport instead. The
+       header owns its own stacking context (position:relative; z-index:1) above that backdrop, so a
+       fixed ::after at z-index:-1 sits over the backdrop yet under the header's text + buttons. */
+    .jpx-custom-detail .jpx-detail-header::after {
+        content: '' !important;
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background:
+            linear-gradient(90deg,
+                rgba(11, 11, 16, 0.94) 0%,
+                rgba(11, 11, 16, 0.60) 34%,
+                rgba(11, 11, 16, 0.12) 68%,
+                rgba(11, 11, 16, 0) 100%),
+            linear-gradient(0deg,
+                rgba(11, 11, 16, 0.97) 0%,
+                rgba(11, 11, 16, 0.40) 30%,
+                rgba(11, 11, 16, 0) 60%) !important;
+    }
+}
+
+/* jpxDetailDesktop3 — pull the header to the top on desktop. The stock #itemBackdrop is a
+   transparent 40vh spacer that pushes the header into the lower third; the real backdrop is the
+   fixed full-viewport layer, so collapse the spacer and let the header's own 13vh top padding
+   set the offset (Moonfin puts the logo near the top). */
+@media (min-width: 960px) {
+    .jpx-custom-detail #itemBackdrop {
+        height: 0 !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+}
+
+/* jpxDetailTv — TV/10-foot tweaks. The desktop layout (>=960px) already applies to the large TV
+   viewport; this only stops the off-screen stock track <select>s from grabbing D-pad focus. */
+.layout-tv .jpx-custom-detail .trackSelections { display: none !important; }
+
+/* TV backdrop: paint the item backdrop (set as --jpx-tv-bd on the header) as a fixed layer behind
+   the header scrim (::after, z-index -1). Pseudo-elements of the header, so auto-cleaned on nav. */
+.layout-tv .jpx-detail-header::before {
+    content: '' !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: -2 !important;
+    background-image: var(--jpx-tv-bd, none) !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    pointer-events: none;
+}
+
+/* jpxDetailGap — kill the empty scroll gap on desktop. The stock .detailPageSecondaryContainer
+   (cast / similar / details / media-info sections) is fully replaced by our pill tabs, but the
+   container itself still occupies ~570px of dark space below the custom header, so the page scrolls
+   past the fixed backdrop into black. Hide it. The subtitle dialog still reads .selectSubtitles by
+   value (works even when its ancestor is display:none), and the delegated action buttons live in the
+   primary ribbon, so nothing breaks. */
+@media (min-width: 960px) {
+    .jpx-custom-detail .detailPageWrapperContainer { display: none !important; }
+}
+
+/* jpxDetailCollections: the custom collection header Movies tab already lists the children, so hide
+   the stock collection children grid to avoid a duplicate list. */
+.jpx-custom-tabs #childrenCollapsible,
+.jpx-custom-tabs #collectionItemsCollapsible,
+.jpx-custom-tabs .childrenItemsContainer,
+.jpx-custom-tabs .collectionItems {
+    display: none !important;
+}
+
+/* jpxCollectionBackdrop: a collection detail paints its own art (backdrop, else poster) as a fixed
+   full-viewport backdrop with a built-in bottom scrim so the header text reads on every layout. */
+.jpx-dh-coll.jpx-detail-header::before {
+    content: '' !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: -2 !important;
+    background-image:
+        linear-gradient(0deg, rgba(11, 11, 16, 0.97) 0%, rgba(11, 11, 16, 0.55) 40%, rgba(11, 11, 16, 0.28) 100%),
+        var(--jpx-tv-bd, none) !important;
+    background-size: cover, cover !important;
+    background-position: center 18%, center 18% !important;
+    background-repeat: no-repeat, no-repeat !important;
+    pointer-events: none;
+}
+
+/* === Series: hide stock jellyfin series content (Schedule / Next Up / Seasons) under the custom
+   Moonfin detail — the custom Next Up card + Seasons/Episodes tabs replace them. === */
+.jpx-custom-detail .nextUpSection,
+.jpx-custom-detail .detailVerticalSection,
+.jpx-custom-detail .detailSection { display: none !important; }
+
+/* === Moonfin-style Next Up card (series) === */
+.jpx-dh-nextup { margin: 0.4em 0 1.2em; }
+.jpx-dh-nextup:empty { display: none; }
+.jpx-dh-nextup-label { font-size: 1.35rem; font-weight: 700; color: #fff; margin: 0.2em 0 0.5em; }
+.jpx-dh-nextup-card { display: flex; gap: 0.9em; align-items: stretch; text-decoration: none;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+    padding: 0.7em; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.jpx-dh-nextup-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.jpx-dh-nextup-title { color: var(--jpx-accent, #c235ff); font-weight: 700; font-size: 0.95rem; margin-bottom: 0.3em; }
+.jpx-dh-nextup-syn { color: #cfcfd6; font-size: 0.82rem; line-height: 1.35; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; }
+.jpx-dh-nextup-rem { color: #9a9aa8; font-size: 0.78rem; margin-top: auto; padding-top: 0.4em; }
+.jpx-dh-nextup-thumb { position: relative; flex: 0 0 42%; max-width: 42%; aspect-ratio: 16 / 9;
+    background-size: cover; background-position: center; border-radius: 10px; }
+.jpx-dh-nextup-thumb .material-icons { position: absolute; inset: 0; margin: auto; width: 3rem; height: 3rem;
+    font-size: 3rem; line-height: 3rem; color: #fff; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6)); }
+
+/* === Resume progress on the Play button (in-progress items) === */
+.jpx-dh-play { position: relative; overflow: hidden; }
+.jpx-dh-play-prog { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,0.16); }
+.jpx-dh-play.jpx-dh-play-resume .jpx-dh-play-prog { display: block; }
+.jpx-dh-play-prog-fill { display: block; height: 100%; background: var(--jpx-accent, #c235ff); }
+
+/* ===================== Person (cast/crew) page — Moonfin style ===================== */
+.jpx-person-top {
+    display: flex;
+    align-items: center;
+    gap: 1.1em;
+    margin-bottom: 1.1em;
+}
+.jpx-person-avatar {
+    flex: 0 0 auto;
+    width: 108px;
+    height: 108px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    border: 3px solid var(--jpx-accent, #9385F5);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.jpx-person-avatar-none { background: rgba(255, 255, 255, 0.08); }
+.jpx-person-avatar-none .material-icons { font-size: 52px; color: rgba(255, 255, 255, 0.5); }
+.jpx-person-id { min-width: 0; }
+.jpx-person-name {
+    margin: 0 0 0.25em;
+    font-size: 2.1rem;
+    font-weight: 800;
+    line-height: 1.05;
+    color: #fff;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+}
+.jpx-person-meta,
+.jpx-person-place {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 1rem;
+    line-height: 1.35;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+}
+.jpx-person-place { margin-top: 0.15em; }
+
+/* Favorite pill — big white rounded button with the theme-accent ring (mirrors the Play look). */
+.jpx-person-fav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55em;
+    width: 100%;
+    margin: 0.4em 0 1em;
+    padding: 0.9em 1em;
+    border-radius: 999px;
+    border: 2px solid var(--jpx-accent, #9385F5);
+    background: #fff;
+    color: #111;
+    font-size: 1.05rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+.jpx-person-fav .material-icons { font-size: 1.3em; color: #111; }
+.jpx-person-fav.is-fav .material-icons { color: var(--jpx-accent, #9385F5); }
+.jpx-person-fav:active { transform: translateY(1px); }
+
+/* Display control — circular outline icon + label, matching the item-header action buttons. */
+.jpx-person-controls { margin-bottom: 1.1em; }
+.jpx-person-display {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4em;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: #fff;
+}
+.jpx-person-display-ic {
+    width: 3.1em;
+    height: 3.1em;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.06);
+}
+.jpx-person-display-ic .material-icons { font-size: 1.35em; }
+.jpx-person-display-lb { font-size: 0.8rem; color: rgba(255, 255, 255, 0.85); }
+
+/* Movies / Series segmented toggle. */
+.jpx-person-seg {
+    display: inline-flex;
+    padding: 0.25em;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.09);
+    margin-bottom: 1.2em;
+}
+.jpx-person-seg-btn {
+    border: 0;
+    background: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.5em 1.3em;
+    border-radius: 999px;
+    cursor: pointer;
+}
+.jpx-person-seg-btn.is-active { background: rgba(255, 255, 255, 0.18); color: #fff; }
+
+/* Filmography grid. */
+.jpx-person-grid { margin-top: 0.2em; min-height: 40vh; }
+
+/* Display Options dialog extras (section labels + a checkbox row). */
+.jpx-disp-card .jpx-disp-group {
+    padding: 0.9em 1.15em 0.35em;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+}
+.jpx-disp-box {
+    flex: 0 0 auto;
+    width: 1.35em;
+    height: 1.35em;
+    border-radius: 5px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.jpx-disp-box .material-icons { font-size: 1em; color: #fff; opacity: 0; }
+.jpx-disp-check.selected .jpx-disp-box { background: var(--jpx-accent, #9385F5); border-color: var(--jpx-accent, #9385F5); }
+.jpx-disp-check.selected .jpx-disp-box .material-icons { opacity: 1; }
+
+/* Person page hero offset: the page supplies its own fixed filmography backdrop (.jpx-dh-coll::before),
+   so collapse the stock #itemBackdrop spacer (which otherwise stacks on top of the 44vh hero margin and
+   shoves the headshot to the bottom) and use a compact offset so the headshot sits mid-upper like Moonfin. */
+.jpx-person-page.jpx-custom-detail #itemBackdrop {
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+}
+.layout-mobile .jpx-person-page .jpx-detail-header.jpx-person { margin-top: 30vh; }
+@media (min-width: 960px) {
+    .jpx-person-page .jpx-detail-header.jpx-person { padding-top: 12vh; }
+}
+
+/* ===================== Studio / Genre grouping page — Moonfin style ===================== */
+.jpx-grouping-page.jpx-custom-detail #itemBackdrop { height: 0 !important; min-height: 0 !important; overflow: hidden !important; }
+/* No hero backdrop on a grouping page, so start the content near the top on every layout
+   (the base .jpx-detail-header 44vh hero offset is for item pages with a backdrop). */
+.jpx-grouping-page .jpx-detail-header.jpx-grouping { margin-top: 8vh !important; }
+@media (min-width: 960px) {
+    .jpx-grouping-page .jpx-detail-header.jpx-grouping { margin-top: 0 !important; padding-top: 4vh; }
+}
+.jpx-grp-head { display: flex; align-items: baseline; justify-content: center; gap: 0.55em; margin-bottom: 1em; flex-wrap: wrap; }
+.jpx-grp-title { font-size: 1.9rem; font-weight: 700; color: #fff; }
+.jpx-grp-count { font-size: 1rem; color: rgba(255, 255, 255, 0.5); }
+.jpx-grp-searchwrap { display: flex; align-items: center; gap: 0.5em; background: rgba(255, 255, 255, 0.09); border-radius: 999px; padding: 0.7em 1.1em; margin: 0 0 1em; }
+.jpx-grp-searchwrap > .material-icons { color: rgba(255, 255, 255, 0.55); font-size: 1.3em; }
+.jpx-grp-search { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: #fff; font-size: 1.05rem; }
+.jpx-grp-search::placeholder { color: rgba(255, 255, 255, 0.5); }
+.jpx-grp-toolbar { display: flex; align-items: center; justify-content: center; gap: 1.3em; margin-bottom: 1.2em; }
+.jpx-grp-tbtn { width: 2.7em; height: 2.7em; border-radius: 12px; border: 0; background: rgba(255, 255, 255, 0.09); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.jpx-grp-tbtn:active { background: rgba(255, 255, 255, 0.16); }
+.jpx-grp-tbtn .material-icons { font-size: 1.4em; }
+.jpx-grp-dir { margin-left: auto; color: var(--jpx-accent, #9385F5); }
+/* Match home-screen poster density with a responsive grid (layout-independent, so mobile
+   matches everywhere) instead of cardBuilder's layout-sensitive scalable sizing. */
+.jpx-grp-grid { display: grid !important; gap: 0.9em; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.jpx-grp-grid.jpx-grp-s { grid-template-columns: repeat(auto-fill, minmax(95px, 1fr)); }
+.jpx-grp-grid.jpx-grp-m { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.jpx-grp-grid.jpx-grp-l { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); }
+.jpx-grp-grid.jpx-grp-xl { grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); }
+.jpx-grp-grid > * { width: 100% !important; margin: 0 !important; min-width: 0; }
+.jpx-grp-grid .card { width: 100% !important; }
+
+
+/* ===== Grouping page background (Sean): kill the busy backdrop -> solid black ground + a
+   frosted-glass overlay; the poster cards sit on top. ===== */
+.jpx-grouping-page .backdropContainer,
+.jpx-grouping-page .backdropImage,
+.jpx-grouping-page #itemBackdrop,
+.jpx-grouping-page .detailBackdrop { display: none !important; }
+.jpx-grouping-page { background-color: #060512 !important; }
+body:has(.jpx-grouping-page) { background-color: #060512 !important; }
+.jpx-grouping-page .jpx-detail-header.jpx-grouping::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(180deg, rgba(147, 133, 245, 0.07), rgba(6, 5, 18, 0) 42%), rgba(255, 255, 255, 0.03);
+    -webkit-backdrop-filter: blur(22px) saturate(120%);
+    backdrop-filter: blur(22px) saturate(120%);
+    pointer-events: none;
+}
+
+/* ===================== Book / comic detail — Moonfin style ===================== */
+.jpx-book-page.jpx-custom-detail #itemBackdrop { height: 0 !important; min-height: 0 !important; overflow: hidden !important; }
+.jpx-book-page .jpx-detail-header.jpx-book { margin-top: 7vh !important; text-align: center; }
+.jpx-book-cover {
+    width: min(46vw, 230px);
+    aspect-ratio: 2 / 3;
+    margin: 2.2em auto 1.4em;
+    border-radius: 12px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255, 255, 255, 0.07);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.jpx-book-cover .material-icons { font-size: 3em; color: rgba(255, 255, 255, 0.4); }
+.jpx-book-title {
+    margin: 0 0 0.15em;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    text-align: left;
+    line-height: 1.1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.jpx-book-sub { color: rgba(255, 255, 255, 0.6); font-size: 1.05rem; text-align: left; margin-bottom: 1.1em; }
+.jpx-book-read {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    width: 100%;
+    padding: 0.85em 1em;
+    border: 0;
+    border-radius: 999px;
+    background: var(--jpx-t-accent, #9385F5);
+    color: var(--jpx-t-on-accent, #160E2A);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 1.1em;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+}
+.jpx-book-read:active { transform: translateY(1px); }
+.jpx-book-actions { justify-content: flex-start; margin-bottom: 1.2em; }
+.jpx-book-details-btn {
+    display: inline-block;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.55em 1.5em;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 1em;
+    float: left;
+}
+.jpx-book-details { clear: both; text-align: left; }
+/* Book page: the stock cover/name/primary content duplicates below our layout — hide on all layouts. */
+.jpx-book-page .detailImageContainer,
+.jpx-book-page .detailPagePrimaryContent .nameContainer,
+.jpx-book-page .detailPageWrapperContainer { display: none !important; }
+
+/* new bits hidden on mobile (Moonfin centred layout unchanged); shown on desktop */
+.jpx-book-bd { display: none; }
+.jpx-book-overview { display: none; }
+.jpx-book-readrow { display: flex; flex-direction: column; }
+
+/* ---- Book detail on DESKTOP: a movie-style hero (backdrop + title + synopsis + button row) ---- */
+@media (min-width: 960px) {
+    .jpx-book-page .jpx-detail-header.jpx-book {
+        margin-top: 0 !important;
+        text-align: left;
+        position: relative;
+        min-height: 78vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 8vh 5vw 5vh;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+    .jpx-book .jpx-book-bd {
+        display: block;
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        background-size: cover;
+        background-position: center 22%;
+        filter: blur(36px) brightness(0.5);
+        transform: scale(1.15);
+    }
+    .jpx-book-page .jpx-detail-header.jpx-book::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(90deg, rgba(11, 8, 23, 0.95) 0%, rgba(11, 8, 23, 0.78) 38%, rgba(11, 8, 23, 0.28) 72%, rgba(11, 8, 23, 0) 100%),
+          linear-gradient(0deg, #0b0817 1%, rgba(11, 8, 23, 0) 55%);
+    }
+    .jpx-book > .jpx-book-cover,
+    .jpx-book > .jpx-book-main { position: relative; z-index: 1; }
+    .jpx-book .jpx-book-cover {
+        position: absolute;
+        right: 6vw;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 250px;
+        margin: 0;
+    }
+    .jpx-book .jpx-book-main { max-width: 60%; }
+    .jpx-book .jpx-book-title { font-size: 3.4rem; -webkit-line-clamp: 3; line-clamp: 3; margin-bottom: 0.15em; }
+    .jpx-book .jpx-book-sub { font-size: 1.15rem; margin-bottom: 1em; }
+    .jpx-book .jpx-book-overview {
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        line-clamp: 4;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 1.05rem;
+        line-height: 1.55;
+        max-width: 62ch;
+        margin-bottom: 1.4em;
+    }
+    .jpx-book .jpx-book-readrow { flex-direction: row; align-items: center; gap: 1.4em; margin-bottom: 1.1em; }
+    .jpx-book .jpx-book-read { width: auto; padding: 0.85em 2.4em; margin-bottom: 0; }
+    .jpx-book .jpx-book-actions { margin-bottom: 0; }
+    .jpx-book .jpx-book-details-btn { float: none; margin: 0; }
+    .jpx-book .jpx-book-details { max-width: 62ch; }
+}
+
+/* ===================== Album / Playlist detail — Umbry ===================== */
+/* Backdrop is the hero (Moonfin layout): keep the stock #itemBackdrop as the fixed full-bleed
+   cover (the movie-page treatment) and start content in the lower third. When the album has no
+   backdrop, the blurred-art glow is the ground and content starts higher. */
+.jpx-album-page .detailPageWrapperContainer,
+.jpx-album-page .detailImageContainer,
+.jpx-album-page .detailPagePrimaryContent .nameContainer { display: none !important; }
+.jpx-album-page .jpx-detail-header.jpx-album { text-align: left; }
+.jpx-album-page.jpx-album-nobd.jpx-custom-detail #itemBackdrop { height: 0 !important; min-height: 0 !important; overflow: hidden !important; }
+.jpx-album-page.jpx-album-nobd .jpx-detail-header.jpx-album { margin-top: 10vh !important; }
+.jpx-alb-art {
+    width: min(64vw, 300px);
+    aspect-ratio: 1;
+    margin: 1.6em auto 1.2em;
+    border-radius: 18px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255, 255, 255, 0.07);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.jpx-alb-art .material-icons { font-size: 3em; color: rgba(255, 255, 255, 0.4); }
+.jpx-alb-title {
+    margin: 0 0 0.1em;
+    font-size: clamp(1.8rem, 7vw, 2.6rem);
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.7);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.jpx-alb-artist { display: block; color: var(--jpx-t-accent, #9385F5); font-weight: 700; font-size: 1.1rem; text-decoration: none; margin-bottom: 0.3em; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7); }
+.jpx-alb-meta { color: rgba(255, 255, 255, 0.7); font-size: 0.98rem; margin-bottom: 1.1em; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7); }
+.jpx-alb-play {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    width: auto;
+    padding: 0.82em 2.6em;
+    border: 0;
+    border-radius: 999px;
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5);
+    color: #160E2A;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin: 0.2em 0 1.1em;
+    box-shadow: 0 10px 26px -6px rgba(147, 133, 245, 0.6);
+}
+.jpx-alb-play:active { transform: translateY(1px); }
+.jpx-alb-actions { justify-content: center; margin-bottom: 1.2em; }
+.jpx-alb-tracks {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.07);
+    -webkit-backdrop-filter: blur(26px) saturate(1.25);
+    backdrop-filter: blur(26px) saturate(1.25);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 18px;
+    padding: 0.9em 0 0.4em;
+    margin-bottom: 2em;
+    overflow: hidden;
+}
+.jpx-alb-tracks-title { font-size: 1.25rem; font-weight: 800; color: #fff; padding: 0 1em 0.5em; }
+.jpx-alb-row {
+    display: flex;
+    align-items: center;
+    gap: 0.9em;
+    width: 100%;
+    border: 0;
+    background: none;
+    color: #fff;
+    text-align: left;
+    padding: 0.75em 1em;
+    cursor: pointer;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.jpx-alb-row:active { background: rgba(255, 255, 255, 0.08); }
+.jpx-alb-row.playing { background: rgba(147, 133, 245, 0.14); }
+.jpx-alb-num { flex: 0 0 1.9em; text-align: center; color: rgba(255, 255, 255, 0.5); font-variant-numeric: tabular-nums; }
+.jpx-alb-row-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.jpx-alb-row-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jpx-alb-row-sub { font-size: 0.85rem; color: rgba(255, 255, 255, 0.55); }
+.jpx-alb-dur { flex: 0 0 auto; color: rgba(255, 255, 255, 0.55); font-variant-numeric: tabular-nums; font-size: 0.92rem; }
+
+/* ===================== MusicArtist detail — Umbry ===================== */
+.jpx-artist-meta { text-transform: capitalize; }
+.jpx-artist-bio { text-align: left; margin-bottom: 1.4em; }
+.jpx-artist-bio-text {
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.5;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.jpx-artist-bio-text.expanded { -webkit-line-clamp: unset; line-clamp: unset; }
+.jpx-artist-more {
+    background: none;
+    border: 0;
+    color: var(--jpx-t-accent, #9385F5);
+    font-weight: 600;
+    padding: 0.4em 0;
+    cursor: pointer;
+    font-size: 0.98rem;
+}
+.jpx-artist-albums-title { font-size: 1.35rem; font-weight: 800; color: #fff; text-align: left; margin-bottom: 0.6em; }
+.jpx-artist-albums {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 0.9em 0.7em;
+    margin-bottom: 2.2em;
+}
+.jpx-artist-albums .jpx-grpcard-img { aspect-ratio: 1 !important; border-radius: 10px; }
+/* album cards inside the artist grid: kill the stock link underline/color bleed */
+.jpx-artist-albums .jpx-grpcard { text-decoration: none !important; }
+.jpx-artist-albums .jpx-grpcard-t { color: #fff !important; text-align: center; text-decoration: none !important; }
+.jpx-artist-albums .jpx-grpcard-y { color: rgba(255, 255, 255, 0.55) !important; text-align: center; text-decoration: none !important; }
+
+/* jpxLeafBackdrop: when a leaf/collection detail paints its own fixed full-viewport backdrop
+   (.jpx-dh-coll::before), retire the stock backdrop layers on every layout — they rode inside the
+   nav-shifted content and rendered off-centre / short (the right-edge strip + bottom gap). */
+.jpx-coll-bd #itemBackdrop,
+.jpx-coll-bd .backdropContainer,
+.jpx-coll-bd .backdropImage,
+.layout-mobile .jpx-coll-bd #itemBackdrop.itemBackdrop {
+    display: none !important;
+    height: 0 !important;
+}
+
+/* Base grouping-grid cards (poster + title + year) — RESTORED (a prior scss rewrite dropped this
+   block, leaving only the .jpx-artist-albums-scoped copies, so grouping posters collapsed to h:0
+   and rendered as bare underlined links). */
+.jpx-grpcard { display: block; text-decoration: none !important; min-width: 0; }
+.jpx-grpcard-img {
+    aspect-ratio: 2 / 3;
+    border-radius: 10px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255, 255, 255, 0.07);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+.jpx-grpcard-wide .jpx-grpcard-img { aspect-ratio: 16 / 9; }
+.jpx-grpcard-img .material-icons { color: rgba(255, 255, 255, 0.4); font-size: 2em; }
+.jpx-grpcard-t {
+    margin-top: 0.45em;
+    color: #fff !important;
+    font-size: 0.92rem;
+    text-align: center;
+    text-decoration: none !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.jpx-grpcard-y { color: rgba(255, 255, 255, 0.55) !important; font-size: 0.8rem; text-align: center; text-decoration: none !important; }
+.jpx-grpcard:active .jpx-grpcard-img { transform: scale(0.97); }

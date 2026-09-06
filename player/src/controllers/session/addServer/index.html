@@ -1,0 +1,26 @@
+<div id="addServerPage" data-role="page" class="page standalonePage jpx-auth-page">
+    <div class="padded-left padded-right padded-bottom-page margin-auto-y">
+        <form class="addServerForm jpx-auth-card" novalidate>
+            <h1 class="jpx-auth-title">${HeaderConnectToServer}</h1>
+            <div class="inputContainer">
+                <input is="emby-input" type="url" id="txtServerHost" required="required" label="${LabelServerHost}"/>
+                <div class="fieldDescription">Enter your server address. For Plex you'll be asked to sign in with your Plex account next.</div>
+            </div>
+            <button is="emby-button" type="submit" class="raised button-submit block">
+                <span>${Connect}</span>
+            </button>
+            <button is="emby-button" type="button" class="raised button-cancel block btnCancel">
+                <span>${ButtonCancel}</span>
+            </button>
+            <div style="text-align:center;margin-top:16px;">
+                <a href="#" class="jpx-advanced-toggle" style="font-size:0.82rem;opacity:0.55;text-decoration:underline;cursor:pointer;">Advanced</a>
+            </div>
+            <div class="jpx-advanced-fields hide" style="margin-top:10px;">
+                <div class="inputContainer">
+                    <input is="emby-input" type="text" id="txtPlexToken" autocomplete="off" spellcheck="false" label="Plex token (optional)"/>
+                    <div class="fieldDescription">Advanced: connect a Plex server directly with a token. Most people can leave this blank &mdash; just enter the address above and sign in with Plex.</div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>

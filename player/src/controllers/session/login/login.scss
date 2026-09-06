@@ -1,0 +1,836 @@
+.loginDisclaimerContainer {
+    display: flex;
+    margin-top: 2em;
+}
+
+.loginDisclaimer {
+    margin: 0 auto;
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p {
+        text-align: center;
+    }
+
+    ol,
+    ul {
+        max-width: 40em;
+        margin-left: auto;
+        margin-right: auto;
+        width: fit-content;
+    }
+}
+
+/* Umbry: pre-login back arrow (server-select is the root → hidden there via .hide) */
+#loginPage .jpx-login-back {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 5;
+    width: 2.8rem;
+    height: 2.8rem;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    background: rgba(18, 18, 24, 0.62);
+    backdrop-filter: blur(16px);
+    color: #e8e8ee;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+#loginPage .jpx-login-back.hide { display: none !important; }
+#loginPage .jpx-login-back:hover {
+    background: rgba(40, 40, 52, 0.8);
+    transform: translateX(-1px);
+}
+#loginPage .jpx-login-back .material-icons { font-size: 1.5rem; }
+
+/* Umbry: randomized login backdrop + frosted box */
+.auth-backdrop {
+    position: fixed;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.6) blur(2px);
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+    z-index: 0;
+    pointer-events: none;
+}
+.auth-backdrop.active { opacity: 1; }
+
+/* Never let the server's /Branding/Splashscreen become the page background — after a Jellyfin
+ * login it resolves to the Jellyfin logo and shows above our wordmark. The app applies it to the
+ * page element directly (not the backdrop container), so a hard override is the reliable kill.
+ * Our .auth-backdrop (rotating TMDB art) is the intended login/add-server backdrop. */
+#loginPage,
+#addServerPage {
+    background-image: none !important;
+    background: transparent !important;
+}
+
+/* A connected Jellyfin server's CustomCss (e.g. Sentinel Prime's theme) injects a login logo
+ * via `.padded-left::before` — it renders THAT server's diamond above our wordmark, only after
+ * a Jellyfin login. Pseudo-elements can't be inline-styled, so kill it with a selector more
+ * specific than any the server would use, so we win regardless of injection order. */
+html body #loginPage .padded-left::before,
+html body #loginPage .padded-left::after,
+html body #addServerPage .padded-left::before,
+html body #addServerPage .padded-left::after {
+    content: none !important;
+    background: none !important;
+    display: none !important;
+}
+#loginPage .manualLoginForm,
+#loginPage .visualLoginForm {
+    position: relative;
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.62);
+    backdrop-filter: blur(8px);
+    border-radius: 16px;
+    padding: 1.5em 2em 1.75em;
+    max-width: 30em;
+    margin: 0 auto 1.2em;
+}
+
+/* Umbry login: header-hide, centered logo, quick-connect removal.
+ * Scoped with :has(#loginPage) so the toolbar hide applies ONLY while the login
+ * page is actually in the DOM and self-clears on navigation — a JS-managed body
+ * class leaked past login in the React app and hid the toolbar app-wide. */
+body:has(#loginPage:not(.hide)) .skinHeader { display: none !important; }
+#loginPage .btnQuick { display: none !important; }
+#loginPage .readOnlyContent .btnForgotPassword { display: none !important; }
+.jpx-login-logo {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    margin: 4vh auto 0.9em;
+}
+.jpx-login-logo img {
+    width: clamp(220px, 32vw, 400px);
+    display: block;
+    margin: 0 auto;
+}
+#loginPage .jpx-forgot { margin-top: 0.6em; }
+
+body:has(#loginPage:not(.hide)) #reactRoot header.MuiAppBar-root { display: none !important; }
+
+/* Umbry standalone entry: clean the visual (server-/user-select) state — no frosted
+ * "Please sign in" box, no Manual Login button; theme the Select / Add Server button. */
+#loginPage .visualLoginForm {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+#loginPage .visualLoginForm h1 { display: none !important; }
+#loginPage .btnManual { display: none !important; }
+
+/* Match the account screen's "Sign in" button (jpx-account-submit): a horizontal purple->violet
+   gradient + soft drop shadow (no cyan, no glow). */
+#loginPage .btnSelectServer {
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32) !important;
+    transition: filter 0.15s ease, transform 0.05s ease;
+}
+#loginPage .btnSelectServer:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32) !important;
+}
+#loginPage .btnSelectServer:active {
+    transform: translateY(1px);
+}
+
+/* Umbry user sign-in (manual login) — Sign In matches the account/server "Sign in" button
+   (horizontal purple->violet gradient, soft drop shadow); Cancel is the translucent secondary. */
+#loginPage .manualLoginForm .button-submit {
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32) !important;
+    transition: filter 0.15s ease, transform 0.05s ease;
+}
+#loginPage .manualLoginForm .button-submit:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32) !important;
+}
+#loginPage .manualLoginForm .button-submit:active { transform: translateY(1px); }
+#loginPage .manualLoginForm .btnCancel {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #d7d7e0 !important;
+    border: 1px solid var(--jpx-card-border, rgba(255, 255, 255, 0.08)) !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+}
+#loginPage .manualLoginForm .btnCancel:hover { filter: brightness(1.12); }
+#loginPage .manualLoginForm .btnForgotPassword {
+    background: rgba(255, 255, 255, 0.06) !important;
+    background-image: none !important;
+    color: #cfcfe0 !important;
+    border: 1px solid var(--jpx-card-border, rgba(255, 255, 255, 0.08)) !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+}
+#loginPage .manualLoginForm .btnForgotPassword:hover { filter: brightness(1.15); }
+
+/* Inline server picker */
+/* Animated aurora background (VIEWPORT-FIXED, like the old movie backdrop) — matches the account
+   sign-in screen. #loginPage is only as tall as its content, so a fixed layer is needed to fill the
+   screen; blur/opacity go on the blobs so the dark base stays solid. */
+.jpx-auth-aurora {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background: #08070d; overflow: hidden;
+}
+.jpx-auth-blob {
+    position: absolute; width: 68vmax; height: 68vmax; border-radius: 50%;
+    filter: blur(72px); opacity: 0.85;
+}
+.jpx-auth-blob.b1 { background: radial-gradient(circle, #FF9A4B 0%, transparent 72%); top: -10%; left: -8%; animation: jpxAuthA 22s ease-in-out infinite; }
+.jpx-auth-blob.b2 { background: radial-gradient(circle, #7B6EF0 0%, transparent 72%); bottom: -12%; right: -6%; animation: jpxAuthB 27s ease-in-out infinite; }
+.jpx-auth-blob.b3 { background: radial-gradient(circle, #C77BD8 0%, transparent 72%); top: 30%; left: 40%; animation: jpxAuthC 19s ease-in-out infinite; }
+@keyframes jpxAuthA {
+    0% { transform: translate(0, 0) scale(1); }
+    20% { transform: translate(52%, 34%) scale(1.28); }
+    40% { transform: translate(14%, 72%) scale(0.82); }
+    60% { transform: translate(66%, 46%) scale(1.16); }
+    80% { transform: translate(30%, 12%) scale(1.06); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes jpxAuthB {
+    0% { transform: translate(0, 0) scale(1.1); }
+    25% { transform: translate(-46%, -30%) scale(0.88); }
+    50% { transform: translate(-14%, -66%) scale(1.24); }
+    75% { transform: translate(-62%, -18%) scale(1); }
+    100% { transform: translate(0, 0) scale(1.1); }
+}
+@keyframes jpxAuthC {
+    0% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-42%, 36%) scale(1.18); }
+    50% { transform: translate(36%, -32%) scale(0.86); }
+    75% { transform: translate(-26%, -42%) scale(1.22); }
+    100% { transform: translate(0, 0) scale(1); }
+}
+
+/* Server-picker card — a CENTERED OVERLAY card with the logo inside, identical to the account
+   sign-in card (.jpx-account-card), floating over the shared aurora. */
+#loginPage .jpx-server-select {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    width: min(94vw, 460px);   /* wider so 3 server cards + their names fit without cramping */
+    box-sizing: border-box;
+    display: flex; flex-direction: column; gap: 0.7em;
+    background: rgba(16, 15, 22, 0.72);
+    border: 1px solid rgba(147, 133, 245, 0.28);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    border-radius: 18px;
+    padding: 2.2em 2em;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+    animation: jpxSsIn 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+/* During an in-app server SWITCH the login page renders as a `.mainAnimatedPage` with
+   `contain: size style`, which makes it the containing block for the fixed .jpx-server-select
+   overlay (Chromium) and shoves it off the top of the screen. Drop containment + any transform on
+   the login page while the picker is shown so the overlay centers on the VIEWPORT again. The
+   max-height/scroll is a safety net for very short viewports. */
+body:has(.jpx-server-select:not(.hide)) #loginPage {
+    /* Clear every property that could make #loginPage the containing block for the fixed overlay
+       (transform / contain / container-type / content-visibility / filters), AND pin it to fill
+       the viewport so that even if it stays the containing block, 50% centering lands on-screen.
+       Without this, an in-app switch renders #loginPage as an offset .mainAnimatedPage and the
+       overlay is shoved ~200px off the top. */
+    contain: none !important;
+    container-type: normal !important;
+    content-visibility: visible !important;
+    transform: none !important;
+    perspective: none !important;
+    filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    position: fixed !important;
+    inset: 0 !important;
+}
+/* The real containing-block culprit: the .padded-left wrapper around the overlay carries a
+   `backdrop-filter: blur()` (frosted effect / server branding bleed), which makes IT the fixed
+   overlay's containing block. Kill the filter on the wrappers while the picker is shown so the
+   overlay resolves against the viewport. */
+body:has(.jpx-server-select:not(.hide)) #loginPage .padded-left,
+body:has(.jpx-server-select:not(.hide)) #loginPage .padded-right,
+body:has(.jpx-server-select:not(.hide)) #loginPage [class*='padded'] {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    filter: none !important;
+    transform: none !important;
+    contain: none !important;
+    perspective: none !important;
+}
+#loginPage .jpx-server-select {
+    max-height: calc(100dvh - 1.5rem);
+    overflow-y: auto;
+}
+/* Entrance that keeps the translate(-50%,-50%) centering while sliding in from the right. */
+@keyframes jpxSsIn {
+    from { opacity: 0; transform: translate(calc(-50% + 48px), -50%); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+#loginPage .jpx-ss-logo {
+    display: block; width: clamp(220px, 32vw, 400px); max-width: 90%; height: auto;
+    margin: 0 auto 0.2em;
+    filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.5));
+}
+/* With the server-picker overlay up, hide the page's own (above-card) logo — the card has its own. */
+#loginPage:has(.jpx-server-select:not(.hide)) .jpx-login-logo { display: none !important; }
+
+/* ---- Remove-server UX: a secondary Remove button, per-card selection checkboxes, inline confirm ---- */
+#loginPage .jpx-remove-server {
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    color: #e6e6ee !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+    margin-top: 0.1em;
+}
+#loginPage .jpx-remove-server:hover { background: rgba(255, 255, 255, 0.08) !important; }
+
+#loginPage .jpx-server-card { position: relative; }
+.jpx-server-check {
+    position: absolute; top: 7px; left: 7px;
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.75);
+    background: rgba(0, 0, 0, 0.45);
+    box-sizing: border-box;
+    display: none; align-items: center; justify-content: center;
+    z-index: 4;
+}
+.jpx-removing .jpx-server-check { display: flex; }
+.jpx-removing .jpx-server-card { cursor: pointer; }
+.jpx-server-card.selected { outline: 2px solid var(--jpx-accent, #9385F5); outline-offset: 1px; border-radius: 12px; }
+.jpx-server-card.selected .jpx-server-check {
+    background: var(--jpx-accent, #9385F5); border-color: var(--jpx-accent, #9385F5);
+}
+.jpx-server-card.selected .jpx-server-check::after {
+    content: ''; width: 6px; height: 11px;
+    border: solid #fff; border-width: 0 2px 2px 0;
+    transform: rotate(45deg); margin-top: -3px;
+}
+
+.jpx-remove-bar {
+    margin-top: 0.6em; padding: 0.75em 0.8em;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 77, 109, 0.4);
+    border-radius: 12px; text-align: center;
+}
+.jpx-remove-bar-text { font-size: 0.9em; color: #f2d7d7; margin-bottom: 0.7em; line-height: 1.35; }
+.jpx-remove-bar-actions { display: flex; gap: 0.6em; }
+#loginPage .jpx-remove-bar-actions button {
+    flex: 1; padding: 0.6em !important; border-radius: 9px !important; border: 0 !important;
+    font-weight: 600 !important; box-shadow: none !important; margin: 0 !important;
+}
+#loginPage .jpx-rb-cancel { background: rgba(255, 255, 255, 0.12) !important; color: #fff !important; }
+#loginPage .jpx-rb-ok { background: linear-gradient(90deg, #ff4d6d, #c81d4e) !important; color: #fff !important; }
+#loginPage .jpx-rb-ok[disabled] { opacity: 0.45 !important; }
+
+.jpx-ss-heading {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 1em;
+}
+
+.jpx-servers {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);   /* always 3 servers per row */
+    gap: 1.1em 0.5em;
+    align-items: start;
+    justify-items: stretch;
+    margin-bottom: 1.3em;
+}
+
+.jpx-server-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5em;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    padding: 0.5em 0.6em;
+    border-radius: 12px;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jpx-server-card:hover {
+    transform: translateY(-3px);
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: 0 0 22px var(--jpx-accent-glow, rgba(255, 154, 75, 0.32));
+}
+
+.jpx-server-logo {
+    width: 4.5rem;
+    height: 4.5rem;
+    object-fit: contain;
+    filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5));
+}
+
+.jpx-server-name {
+    max-width: 100%;
+    font-size: 0.95rem;
+    color: #e8e8ee;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Match the account screen's "Sign in" button (.jpx-account-submit) exactly: horizontal
+   purple->violet gradient (no cyan), soft drop shadow (no glow), 10px radius, weight 700. */
+#loginPage .jpx-add-server {
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32) !important;
+    transition: filter 0.15s ease, transform 0.05s ease;
+}
+
+#loginPage .jpx-add-server:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32) !important;
+}
+
+#loginPage .jpx-add-server:active {
+    transform: translateY(1px);
+}
+
+/* ==========================================================================
+   Umbry auth pages — shared sleek treatment (login, server-select, add-server).
+   Goal: cohesive, cinematic, not bland. Additive polish only — the login page's
+   approved button styling is left untouched; this adds depth, motion + brand accents.
+   ========================================================================== */
+
+:root {
+    --jpx-accent: #9385F5;
+    --jpx-gradient: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5);
+    --jpx-accent-glow: rgba(147, 133, 245, 0.5);
+    --jpx-card-bg: rgba(14, 14, 20, 0.66);
+    --jpx-card-border: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes jpxAuthIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Frosted cards on every auth surface share a border, layered depth + entrance. */
+#loginPage .manualLoginForm,
+#loginPage .visualLoginForm:not([style*='transparent']),
+.jpx-auth-card {
+    border: 1px solid var(--jpx-card-border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    animation: jpxAuthIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Add-server page — reuse the login card look + vertical centering. */
+.jpx-auth-page {
+    display: flex;
+    flex-direction: column;
+}
+.jpx-auth-card {
+    position: relative;
+    z-index: 2;
+    background: var(--jpx-card-bg);
+    backdrop-filter: blur(14px);
+    border-radius: 16px;
+    padding: 1.6em 2em 1.8em;
+    max-width: 30em;
+    margin: 0 auto 1.2em;
+}
+.jpx-auth-card .fieldDescription {
+    opacity: 0.7;
+    margin-top: 0.4em;
+}
+
+/* Add-server ("Connect to Server") heading — white, matching the server-picker heading. */
+.jpx-auth-title {
+    background: none;
+    -webkit-text-fill-color: #fff;
+    color: #fff;
+}
+.jpx-ss-heading {
+    background: none;
+    -webkit-text-fill-color: #fff;
+    color: #fff;
+}
+.jpx-auth-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin: 0 0 1.1em;
+}
+
+/* Primary (Connect) button — the new horizontal purple->violet gradient (matches account/server). */
+#addServerPage .jpx-auth-card .button-submit {
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32) !important;
+    transition: filter 0.15s ease, transform 0.05s ease;
+}
+#addServerPage .jpx-auth-card .button-submit:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32) !important;
+}
+#addServerPage .jpx-auth-card .button-submit:active { transform: translateY(1px); }
+.jpx-auth-card .button-cancel {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #d7d7e0 !important;
+    border: 1px solid var(--jpx-card-border) !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+    margin-top: 0.6em;
+}
+
+/* Accent focus ring on auth inputs. */
+.jpx-auth-card .emby-input:focus,
+#loginPage .emby-input:focus {
+    box-shadow: 0 0 0 2px var(--jpx-accent-glow);
+    border-color: var(--jpx-accent);
+}
+
+/* Server picker — upgrade the cards from bare buttons to frosted tiles. */
+.jpx-server-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--jpx-card-border);
+    padding: 1em 0.9em;
+    min-width: 8.5em;
+}
+.jpx-server-card:hover {
+    border-color: var(--jpx-accent);
+}
+.jpx-server-logo {
+    padding: 0.55em;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 0 0 1px var(--jpx-card-border);
+}
+
+/* The visual (user-select) form is capped at 30em for the narrow sign-in box; the USER GRID
+   needs room to spread, so widen its wrapper and let #divUsers' own max-width set the columns. */
+#loginPage .visualLoginForm { max-width: 92vw !important; }
+/* Umbry user-select: larger avatars, breathing room, and FULL (untruncated) usernames. */
+#loginPage #divUsers {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 1.5em 1.6em;
+    /* Sized to fit exactly 6 fixed-width (7em) cards per row on desktop; wraps to fewer on
+       narrow/mobile automatically, and TV (>=100em) widens below to show more. */
+    max-width: 52em;
+    margin: 0 auto;
+    padding: 0.5em;
+}
+#loginPage #divUsers .card.squareCard {
+    width: 7em !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+#loginPage #divUsers .cardBox { margin: 0 !important; padding: 0 !important; background: transparent !important; }
+/* Circular avatars: .cardScalable is the real 104x104 square box (sized by .cardPadder); the
+   image + content are absolute overlays inside it. Clip .cardScalable itself to a circle
+   (overflow:hidden) and it rounds BOTH photo (coveredImage) and icon avatars, whatever their
+   inner positioning. Footer text is a sibling outside .cardScalable, so it's untouched. */
+#loginPage #divUsers .cardScalable {
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), inset 0 0 0 1px var(--jpx-card-border);
+}
+/* The photo/icon fills .cardContent (position:absolute, 104x104, overflow:hidden); its own
+   border-radius is what actually clips the image. Round it to a full circle. Keep its stock
+   absolute position (do NOT set relative — that collapses it to 0 height). */
+#loginPage #divUsers .cardContent {
+    border-radius: 50% !important;
+    overflow: hidden !important;
+}
+/* Round the image element ITSELF — its background-image is always clipped by its own
+   border-radius (no ancestor-clip layer quirk), so this is what makes PHOTO avatars circular. */
+#loginPage #divUsers .cardImageContainer,
+#loginPage #divUsers .cardImage {
+    border-radius: 50% !important;
+    overflow: hidden !important;
+}
+#loginPage #divUsers .card.squareCard:hover .cardScalable {
+    box-shadow: 0 0 0 2px var(--jpx-accent), 0 8px 24px var(--jpx-accent-glow);
+}
+#loginPage #divUsers .cardFooter { padding: 0 !important; }
+#loginPage #divUsers .cardText.singleCardText {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    max-width: none !important;
+    width: 100%;
+    font-size: 0.98rem !important;
+    line-height: 1.25 !important;
+    text-align: center;
+    margin-top: 0.55em;
+    color: #fff;
+    word-break: break-word;
+}
+
+
+/* Umbry: remove-server control on each server-select card */
+.jpx-server-card { position: relative; }
+.jpx-server-remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+.jpx-server-remove .material-icons { font-size: 18px; line-height: 1; }
+.jpx-server-remove:hover { background: #c0392b; transform: scale(1.08); }
+
+
+/* Umbry: confirm dialogs (e.g. remove-server) matched to the auth screen palette */
+.jpx-auth-dialog .formDialogContent {
+    background: rgba(12, 12, 18, 0.97) !important;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(147, 133, 245, 0.18);
+}
+.jpx-auth-dialog .formDialogHeaderTitle {
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    font-weight: 700;
+}
+.jpx-auth-dialog .formDialogFooter button[data-id="ok"],
+.jpx-auth-dialog .formDialogFooterItem.button-delete {
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    color: #fff !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 6px 18px rgba(255, 154, 75, 0.32) !important;
+}
+.jpx-auth-dialog .formDialogFooter button[data-id="ok"]:hover {
+    filter: brightness(1.08);
+}
+.jpx-auth-dialog .formDialogFooter button[data-id="cancel"],
+.jpx-auth-dialog .formDialogFooterItem.button-cancel {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: #d7d7e0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 12px !important;
+}
+
+/* Umbry eclipse mark above the wordmark (login + server-select) */
+.jpx-login-logo { display: flex !important; flex-direction: column; align-items: center; gap: 0; }
+.jpx-login-mark { width: 130px !important; height: 130px !important; object-fit: contain; flex: 0 0 auto; margin-bottom: -26px; }
+.jpx-ss-mark { display: block; width: 130px !important; height: 130px !important; margin: 0 auto -26px !important; object-fit: contain; }
+
+/* Umbry: kill the stock jellyfin raised-button gradient (#aa5cc3->#00a4dc) leaking onto the
+   server-select buttons. Remove = intended transparent outline; Select = Umbry gradient. */
+#loginPage button.jpx-remove-server.raised,
+#loginPage .jpx-remove-server.raised.block {
+    background: transparent !important;
+    background-image: none !important;
+}
+#loginPage button.btnSelectServer.raised,
+#loginPage .btnSelectServer.raised.block {
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    background-image: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+}
+
+/* Umbry: server-select Add/Remove buttons match the account "Connect" button exactly
+   (clean gradient pill) — override the leftover emby-button chrome + earlier transparent rule. */
+#loginPage button.jpx-add-server.raised.block,
+#loginPage button.jpx-remove-server.raised.block {
+    padding: 0.85em !important; font-size: 1.02em !important; font-weight: 700 !important;
+    text-transform: none !important; letter-spacing: normal !important; min-height: 0 !important;
+    color: #fff !important; border: 0 !important; border-radius: 10px !important;
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    background-image: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    box-shadow: 0 8px 24px rgba(255, 154, 75, 0.32) !important;
+    transition: filter 0.15s ease, transform 0.05s ease;
+}
+#loginPage button.jpx-add-server.raised.block:hover,
+#loginPage button.jpx-remove-server.raised.block:hover { filter: brightness(1.08) !important; }
+#loginPage button.jpx-add-server.raised.block:active,
+#loginPage button.jpx-remove-server.raised.block:active { transform: translateY(1px) !important; }
+
+/* Umbry: keep the server-select buttons from squishing/overflowing the card */
+#loginPage button.jpx-add-server.raised.block,
+#loginPage button.jpx-remove-server.raised.block {
+    flex-shrink: 0 !important; box-sizing: border-box !important;
+    width: 100% !important; max-width: 100% !important; margin: 0 !important;
+    box-shadow: 0 6px 18px rgba(255, 154, 75, 0.22) !important;
+}
+
+/* Umbry: defeat a connected server's legacy Branding CSS that injects a late <style> with the
+   OLD blue login-button gradient (#aa5cc3->#00a4dc) using the SAME selector as ours + !important
+   (later load order wins on equal specificity). Beat it with higher specificity (add button. + .raised). */
+#loginPage .manualLoginForm button.button-submit.raised,
+#loginPage .manualLoginForm button.raised.block,
+#loginPage button.btnCancel.raised,
+#loginPage button.btnForgotPassword.raised,
+#loginPage button.button-submit.raised.block {
+    background: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    background-image: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5) !important;
+    color: #fff !important;
+    /* Umbry button SHAPE too (branding forces fat fully-rounded pills) */
+    border-radius: 12px !important;
+    padding: 0.85em 1.1em !important;
+    font-weight: 700 !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    min-height: 0 !important;
+    border: 0 !important;
+    margin: 0 0 0.7em !important;
+    box-shadow: 0 8px 22px rgba(255, 154, 75, 0.28) !important;
+}
+
+/* Umbry: "server unavailable" screen (shown when switching to an offline server). */
+.jpx-ss-unavailable .jpx-ss-heading {
+    color: #FF9A4B;
+    line-height: 1.15;
+}
+.jpx-ss-subheading {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 1rem;
+    margin: -0.2em 0 0.6em;
+}
+
+/* ============================================================================
+   Umbry (bug fix 1): the user-select screen (#divUsers grid) overflowed the
+   viewport with no way to reach users below the fold. Give the grid its own
+   capped, scrollable box with a visible themed scrollbar (same convention as
+   scrollstyles.scss's .layout-desktop .scrollY bar). Scoped to the login page. */
+#loginPage #divUsers {
+    max-height: calc(100dvh - 13rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(147, 133, 245, 0.55) rgba(255, 255, 255, 0.05);
+    padding-right: 6px;
+}
+#loginPage #divUsers::-webkit-scrollbar { width: 11px; }
+#loginPage #divUsers::-webkit-scrollbar-thumb {
+    background: rgba(147, 133, 245, 0.55);
+    border-radius: 7px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+#loginPage #divUsers::-webkit-scrollbar-thumb:hover {
+    background: rgba(147, 133, 245, 0.85);
+    background-clip: content-box;
+}
+#loginPage #divUsers::-webkit-scrollbar-track { background: transparent; }
+
+/* ============================================================================
+   Umbry (bug fix 2): the Emby manual-login ("Please sign in") buttons rendered as
+   narrow, left-aligned gradient pills. A connected server's Branding CSS can inject
+   a late high-priority style that strips the .block width, so force full-width block
+   with high specificity + !important. Stack them, keep the Umbry gradient, make the
+   primary Sign In button a touch more prominent. Scoped to .manualLoginForm only. */
+#loginPage .manualLoginForm button.button-submit,
+#loginPage .manualLoginForm button.btnCancel,
+#loginPage .manualLoginForm button.button-submit.raised,
+#loginPage .manualLoginForm button.button-submit.raised.block,
+#loginPage .manualLoginForm button.btnCancel.raised,
+#loginPage .manualLoginForm button.btnCancel.raised.block {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 0 0.7em !important;
+    text-align: center !important;
+}
+/* Primary Sign In — slightly larger so it reads as the main action. */
+#loginPage .manualLoginForm button.button-submit,
+#loginPage .manualLoginForm button.button-submit.raised.block {
+    padding: 0.95em 1.1em !important;
+    font-size: 1.05em !important;
+}
+/* The Cancel button sits in a wrapper div with its own top margin; keep the gap even. */
+#loginPage .manualLoginForm .button-submit + div,
+#loginPage .manualLoginForm > div:has(> .btnCancel) {
+    margin-top: 0 !important;
+}
+
+
+/* ============================================================================
+   Umbry (bug fix): Emby user-select sometimes rendered as a narrow ~30em / 3-per-row
+   dark box instead of the wide, centered, framed 6-per-row grid used on Jellyfin.
+   Root cause: the connected Emby server's custom/branding CSS (injected into the
+   login page, as documented for the login buttons above) overrides Umbry's wide
+   `.visualLoginForm` / `#divUsers` rules, forcing a narrow max-width + dark bg. Win
+   unconditionally with `html body #loginPage` specificity + !important (the same
+   pattern used above to beat branding on `.padded-left::before`), so the wide grid
+   is used for every server. The frame (border + shadow from the frosted-card rule)
+   is intentionally kept; only the width/background constraints are forced. */
+html body #loginPage .visualLoginForm {
+    max-width: 92vw !important;
+    width: auto !important;
+    background: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 auto 1.2em !important;
+}
+html body #loginPage #divUsers {
+    max-width: 52em !important;
+    width: auto !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    align-items: flex-start !important;
+    margin: 0 auto !important;
+}
+html body #loginPage #divUsers .card.squareCard {
+    width: 7em !important;
+    max-width: 7em !important;
+    flex: 0 0 auto !important;
+}
+
+/* Umbry: the login forms (esp. the manual "Please sign in") can exceed a short/non-maximized
+   window; cap #loginPage to the viewport and let it scroll so nothing is cut off below Sign In. */
+html body #loginPage:not(.hide) {
+    max-height: 100dvh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+}

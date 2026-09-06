@@ -1,0 +1,139 @@
+// Umbry — Home-row minimize / restore styles.
+// Minimize button = an outlined accent square in the row header. Minimized rows collapse into a
+// horizontal, centered strip of gradient chips that sits in flow directly under the hero.
+
+$jpx-accent: var(--jpx-t-accent, #9385F5);
+$jpx-on-accent: var(--jpx-t-on-accent, #160E2A);
+
+// ---- minimize button in the row header ----
+// Outlined square: transparent fill, accent border + glyph, subtle accent tint on hover.
+.jpx-rowmin-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.7em;
+    height: 1.7em;
+    margin-inline-start: 0.5em;
+    padding: 0;
+    vertical-align: middle;
+    border: 2px solid $jpx-accent;
+    border-radius: 7px;
+    background: transparent;
+    color: $jpx-accent;
+    cursor: pointer;
+    line-height: 1;
+    opacity: 0.9;
+    transition: background-color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+
+    .jpx-rowmin-glyph {
+        font-size: 1.15em;
+        font-weight: 800;
+        line-height: 1;
+        transform: translateY(-0.06em);
+        color: $jpx-accent;
+    }
+
+    &:hover,
+    &:focus-visible {
+        opacity: 1;
+        background: rgba(147, 133, 245, 0.18); // subtle accent-tinted fill
+        transform: translateY(-1px);
+        outline: none;
+    }
+
+    &:active { transform: translateY(0); }
+}
+
+// ---- hidden (minimized) row ----
+.verticalSection.jpx-rowmin-hidden {
+    display: none !important;
+}
+
+// ---- in-flow strip under the hero (pushes the content rows down) ----
+.jpx-rowmin-strip {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding: 0.35rem 1rem 0.75rem;
+    box-sizing: border-box;
+}
+
+.jpx-rowmin-strip-inner {
+    position: relative;      // chip.offsetLeft is measured against this for the gradient slices
+    display: inline-flex;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    max-width: 100%;
+}
+
+// ---- chips ----
+// The continuous app gradient is painted per-chip via inline background-* by the JS (each chip shows
+// its own slice). This rule keeps the frosted/rounded shape and a fallback fill until JS paints.
+.jpx-rowmin-chip {
+    pointer-events: auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: $jpx-accent; // fallback before the JS gradient paint lands
+    color: $jpx-on-accent;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+
+    svg { fill: currentColor; }
+
+    // The first-letter badge sits over the stack glyph corner.
+    .jpx-rowmin-chip-letter {
+        position: absolute;
+        right: 3px;
+        bottom: 2px;
+        font-size: 11px;
+        font-weight: 800;
+        line-height: 1;
+        color: $jpx-on-accent;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.35);
+    }
+
+    // Full name flyout on hover (below the chip, since the strip is horizontal).
+    .jpx-rowmin-chip-label {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%) scale(0.96);
+        transform-origin: top center;
+        white-space: nowrap;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: rgba(20, 20, 28, 0.85);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid $jpx-accent;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.12s ease, transform 0.12s ease;
+        z-index: 2;
+    }
+
+    &:hover,
+    &:focus-visible {
+        transform: translateY(-2px);
+        filter: brightness(1.08);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+        outline: none;
+
+        .jpx-rowmin-chip-label {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+    }
+}

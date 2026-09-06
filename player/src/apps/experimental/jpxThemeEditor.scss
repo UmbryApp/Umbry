@@ -1,0 +1,102 @@
+/* Umbry Theme Editor — reuses the .jpx-settings-* drawer shell. */
+
+.jpx-editor-paper.jpx-editor-paper { width: 420px; max-width: 94vw; }
+
+.jpx-editor-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.5rem 0.4rem;
+}
+.jpx-editor-field label {
+    font-size: 0.85rem;
+    color: #c9c9d3;
+}
+.jpx-editor-field label b { color: var(--jpx-accent, #c235ff); font-weight: 700; }
+.jpx-editor-field .MuiSlider-root { color: var(--jpx-accent, #c235ff); }
+
+.jpx-editor-text {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #fff;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.92rem;
+    outline: none;
+}
+.jpx-editor-text:focus { border-color: var(--jpx-accent, #c235ff); }
+.jpx-editor-text option { background: #16161c; }
+
+.jpx-editor-color-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.5rem;
+    border-radius: 12px;
+}
+.jpx-editor-color-row:hover { background: rgba(255, 255, 255, 0.04); }
+.jpx-editor-color-label { font-size: 0.92rem; color: #e8e8ee; }
+
+.jpx-editor-json {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.4rem;
+}
+.jpx-editor-json label { font-size: 0.78rem; color: #9a9aa8; margin-top: 0.3rem; }
+.jpx-editor-textarea {
+    width: 100%;
+    min-height: 6.5rem;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: #cfe;
+    font-family: monospace;
+    font-size: 0.75rem;
+    padding: 0.5rem;
+    resize: vertical;
+    box-sizing: border-box;
+}
+.jpx-editor-btn {
+    align-self: flex-start;
+    padding: 0.45rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+.jpx-editor-btn:hover { border-color: var(--jpx-accent, #c235ff); }
+
+.jpx-editor-save {
+    width: 100%;
+    padding: 0.8rem;
+    border: 0;
+    border-radius: 12px;
+    background: var(--jpx-gradient, var(--jpx-accent, #c235ff));
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 6px 22px var(--jpx-accent-glow, rgba(194, 53, 255, 0.5));
+}
+.jpx-editor-save:hover { transform: translateY(-1px); }
+
+/* "Create new theme" entry in the App Theme picker */
+.jpx-apptheme-create {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.9rem;
+    border: 1px dashed rgba(255, 255, 255, 0.25);
+    border-radius: 14px;
+    background: transparent;
+    color: var(--jpx-accent, #c235ff);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+.jpx-apptheme-create:hover { background: rgba(255, 255, 255, 0.04); }

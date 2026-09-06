@@ -1,0 +1,233 @@
+/* Umbry theme tokens — applied to the app surfaces + Umbry components. The --jpx-t-*
+   vars are set at runtime by jpxTheme.ts (applyTheme). Defaults below = the Umbry preset,
+   so the app still themes before the loader runs. Switching an App Theme re-sets the vars and
+   these rules follow. High-impact surfaces are overridden with !important to beat the backend
+   branding theme. */
+
+:root {
+    --jpx-t-background: #0b0b10;
+    --jpx-t-bg-image: none;
+    --jpx-t-on-background: #ffffff;
+    --jpx-t-surface: #16161c;
+    --jpx-t-on-surface: #ffffff;
+    --jpx-t-surface-variant: #20202a;
+    --jpx-t-scrim: #000000cc;
+    --jpx-t-accent: #c235ff;
+    --jpx-t-on-accent: #ffffff;
+    --jpx-t-button-normal: #26262e;
+    --jpx-t-button-focused: #c235ff;
+    --jpx-t-on-button-normal: #ffffff;
+    --jpx-t-input-bg: #ffffff14;
+    --jpx-t-input-border: #ffffff22;
+    --jpx-t-input-border-focused: #c235ff;
+    --jpx-t-range-track: #ffffff33;
+    --jpx-t-range-progress: #c235ff;
+    --jpx-t-range-thumb: #c235ff;
+    --jpx-t-card: #16161c;
+    --jpx-t-card-radius: 16px;
+    --jpx-t-chip-radius: 999px;
+    --jpx-t-focus-border-color: #c235ff;
+    --jpx-t-focus-border-width: 2px;
+    --jpx-t-focus-glow: 0 0 22px 0 #c235ff80;
+    --jpx-t-text-glow: none;
+}
+
+/* ---- App-wide surfaces ---- */
+html, body {
+    background-color: var(--jpx-t-background) !important;
+    /* Themed page-ground gradient (Umbry dusk by default); flat color when a theme has none. */
+    background-image: var(--jpx-t-bg-image, none) !important;
+    background-size: cover;
+    background-repeat: no-repeat;
+    color: var(--jpx-t-on-background);
+}
+/* Let the token background show through the stacked page containers. */
+.backgroundContainer,
+.backgroundContainer.withBackdrop,
+.mainAnimatedPages,
+.mainAnimatedPage,
+.pageContainer,
+.skinBody {
+    background-color: transparent !important;
+}
+
+/* ---- Accent: MUI palette bridge + primary buttons + links ---- */
+/* Best-effort: if MUI reads these at paint they follow the accent; harmless otherwise. */
+:root {
+    --jf-palette-primary-main: var(--jpx-t-accent);
+    --jf-palette-primary-dark: var(--jpx-t-accent);
+    --jf-palette-primary-light: var(--jpx-t-accent);
+}
+.button-submit,
+.raised.button-submit,
+.emby-button.raised.button-submit {
+    background: var(--jpx-gradient, var(--jpx-t-accent)) !important;
+    color: var(--jpx-t-on-accent) !important;
+}
+a:not(.raised):not(.cardImageContainer),
+.emby-button.button-link {
+    color: var(--jpx-t-accent);
+}
+
+/* ---- Cards ---- */
+.card .cardBox,
+.cardBox {
+    background-color: transparent;
+}
+
+/* Card title text stays white; the theme accent is for buttons/borders/outlines, not card labels. */
+.cardText,
+.cardText a,
+.cardText-first,
+.cardText-first a,
+.cardText-first bdi {
+    color: #fff !important;
+}
+.cardText-secondary,
+.cardText-secondary a {
+    color: rgba(255, 255, 255, 0.62) !important;
+}
+.cardImageContainer,
+.cardScalable,
+.card .cardBox {
+    border-radius: var(--jpx-t-card-radius);
+}
+
+/* ---- Inputs ---- */
+.emby-input,
+.emby-textarea {
+    background-color: var(--jpx-t-input-bg);
+    border-color: var(--jpx-t-input-border);
+    color: var(--jpx-t-on-surface);
+}
+.emby-input:focus,
+.emby-textarea:focus {
+    border-color: var(--jpx-t-input-border-focused);
+    box-shadow: 0 0 0 1px var(--jpx-t-input-border-focused);
+}
+
+/* ---- Sliders / progress ---- */
+.mdl-slider-background-lower,
+.sliderBubble,
+progress::-webkit-progress-value {
+    background-color: var(--jpx-t-range-progress);
+}
+
+/* ---- Glass effect ---- */
+body.jpx-glass .card .cardBox,
+body.jpx-glass .jpx-nav-pill,
+body.jpx-glass .jpx-settings-paper,
+body.jpx-glass .jpx-server-select,
+body.jpx-glass .jpx-auth-card,
+body.jpx-glass .manualLoginForm {
+    backdrop-filter: blur(14px) saturate(1.4) !important;
+    background-color: var(--jpx-t-surface) !important;
+    border: 1px solid #ffffff29 !important;
+}
+/* The nav pill keeps the glass blur/border above, but its background stays the dark nav colour and
+   must honour the Navbar Opacity slider — so override just its background-color here (this later,
+   equal-specificity rule beats the group's surface colour above, which otherwise ignored the slider). */
+body.jpx-glass .jpx-nav-pill {
+    background-color: rgba(18, 18, 24, calc(0.62 * var(--jpx-navbar-opacity, 1))) !important;
+}
+
+/* ---- Pixel effect: zero radius everywhere + hard offset shadow, no blur ---- */
+body.jpx-pixel .card .cardBox,
+body.jpx-pixel .cardImageContainer,
+body.jpx-pixel .cardScalable,
+body.jpx-pixel .jpx-nav-pill,
+body.jpx-pixel .jpx-settings-row,
+body.jpx-pixel .jpx-server-card,
+body.jpx-pixel .raised,
+body.jpx-pixel .emby-input {
+    border-radius: 0 !important;
+    box-shadow: 4px 4px 0 0 #000000b3 !important;
+}
+
+/* ---- Neon effect: glowing headings ---- */
+body.jpx-neon h1,
+body.jpx-neon h2,
+body.jpx-neon .sectionTitle,
+body.jpx-neon .jpx-nav-logo {
+    text-shadow: var(--jpx-t-text-glow);
+}
+
+/* ---- preference-driven behaviors (jpxPrefs body classes) ---- */
+/* Background Backdrops off */
+body.jpx-no-backdrop .backdropContainer,
+body.jpx-no-backdrop .backdropImage,
+body.jpx-no-backdrop .jpx-hoverbg {
+    display: none !important;
+}
+
+/* OLED Mode — crush surfaces toward black (overrides the token vars for descendants of body) */
+body.jpx-oled-subtle {
+    --jpx-t-background: #050506;
+    --jpx-t-bg-image: none;
+    --jpx-t-surface: #101014;
+    --jpx-t-card: #101014;
+}
+body.jpx-oled-vivid {
+    --jpx-t-background: #000000;
+    --jpx-t-bg-image: none;
+    --jpx-t-surface: #0a0a0d;
+    --jpx-t-card: #0a0a0d;
+}
+
+/* Focus Expansion Animation off */
+body.jpx-no-focus-expansion .card:hover .cardScalable,
+body.jpx-no-focus-expansion .card:focus .cardScalable {
+    transform: none !important;
+}
+
+
+/* ---- In-app confirm/alert dialogs follow the selected App Theme tokens ----
+   The auth-screen remove-server dialog is excluded (keeps its own gradient via .jpx-auth-dialog). */
+.formDialog:not(.jpx-auth-dialog) .formDialogContent {
+    background: var(--jpx-t-card, #16161c) !important;
+    color: var(--jpx-t-on-surface, #fff);
+    border: 1px solid var(--jpx-t-input-border, #ffffff22);
+    border-radius: var(--jpx-t-card-radius, 16px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+}
+.formDialog:not(.jpx-auth-dialog) .formDialogHeaderTitle {
+    color: var(--jpx-t-on-surface, #fff);
+}
+.formDialog:not(.jpx-auth-dialog) .formDialogFooter button[data-id="ok"],
+.formDialog:not(.jpx-auth-dialog) .formDialogFooterItem.button-submit,
+.formDialog:not(.jpx-auth-dialog) .formDialogFooterItem.button-delete {
+    background: var(--jpx-t-accent, #c235ff) !important;
+    color: var(--jpx-t-on-accent, #fff) !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+    box-shadow: var(--jpx-t-focus-glow, none);
+}
+.formDialog:not(.jpx-auth-dialog) .formDialogFooter button[data-id="ok"]:hover {
+    filter: brightness(1.08);
+}
+.formDialog:not(.jpx-auth-dialog) .formDialogFooter button[data-id="cancel"],
+.formDialog:not(.jpx-auth-dialog) .formDialogFooterItem.button-cancel {
+    background: var(--jpx-t-button-normal, #26262e) !important;
+    color: var(--jpx-t-on-button-normal, #fff) !important;
+    border: 0 !important;
+    border-radius: 12px !important;
+}
+
+/* Umbry: neutralize Jellyfin/Emby stock colored fallback tiles on art-less cards (the loud
+   cyan/teal/green ".defaultCardBackground1-5") — a neutral surface everywhere, not per-server. */
+.defaultCardBackground,
+.defaultCardBackground0,
+.defaultCardBackground1,
+.defaultCardBackground2,
+.defaultCardBackground3,
+.defaultCardBackground4,
+.defaultCardBackground5,
+.cardImageContainer.defaultCardBackground1,
+.cardImageContainer.defaultCardBackground2,
+.cardImageContainer.defaultCardBackground3,
+.cardImageContainer.defaultCardBackground4,
+.cardImageContainer.defaultCardBackground5 {
+    background: var(--jpx-t-card, rgba(255, 255, 255, 0.06)) !important;
+    background-color: var(--jpx-t-card, rgba(255, 255, 255, 0.06)) !important;
+    background-image: none !important;
+}

@@ -1,0 +1,6 @@
+// While the deep-link guard verifies an item in Kids Mode, blank the main view so restricted
+// artwork/titles never flash before a redirect. The nav pill (a sibling of .jpx-app-main) stays
+// visible so the app never looks frozen. The check is fast; this is usually imperceptible.
+body.jpx-guard-pending .jpx-app-main {
+    visibility: hidden;
+}

@@ -1,0 +1,110 @@
+/* Umbry — seasonal decoration animations. The particle DOM is built by jpxSeasonalFx.js;
+   this file provides the motion + ambient effects. The whole layer is click-through and sits below
+   nav / dialogs / the video player. */
+
+.jpx-fx {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 45;
+    contain: strict;
+}
+
+.jpx-fx-p {
+    position: absolute;
+    top: -10%;
+    line-height: 1;
+    user-select: none;
+    will-change: transform, opacity;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
+}
+
+/* ---- falling: snow, leaves, confetti ---- */
+.jpx-fx-fall {
+    animation-name: jpx-fx-fall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+@keyframes jpx-fx-fall {
+    0% { transform: translateY(-12vh) translateX(0) rotate(0deg); opacity: 0; }
+    8% { opacity: 0.95; }
+    92% { opacity: 0.95; }
+    100% { transform: translateY(112vh) translateX(var(--sway, 0)) rotate(var(--rot, 180deg)); opacity: 0.85; }
+}
+
+/* ---- drifting bats: sweep across, gentle vertical wobble ---- */
+.jpx-fx-drift {
+    left: -6%;
+    animation-name: jpx-fx-drift;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+@keyframes jpx-fx-drift {
+    0% { transform: translateX(-10vw) translateY(0); opacity: 0; }
+    6% { opacity: 0.9; }
+    25% { transform: translateX(24vw) translateY(var(--sway, -24px)); }
+    50% { transform: translateX(52vw) translateY(0); }
+    75% { transform: translateX(80vw) translateY(var(--sway, -24px)); }
+    94% { opacity: 0.9; }
+    100% { transform: translateX(116vw) translateY(0); opacity: 0; }
+}
+
+/* ---- twinkle: sparkles / stars ---- */
+.jpx-fx-twinkle {
+    animation-name: jpx-fx-twinkle;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+}
+@keyframes jpx-fx-twinkle {
+    0%, 100% { opacity: 0.12; transform: scale(0.6) rotate(0deg); }
+    50% { opacity: 1; transform: scale(1.2) rotate(15deg); }
+}
+
+/* ---- burst: firework emoji pop + fade ---- */
+.jpx-fx-burst {
+    animation-name: jpx-fx-burst;
+    animation-timing-function: ease-out;
+    animation-iteration-count: infinite;
+    transform-origin: center;
+}
+@keyframes jpx-fx-burst {
+    0% { opacity: 0; transform: scale(0.3); }
+    12% { opacity: 1; transform: scale(1.15); }
+    38% { opacity: 0.8; transform: scale(1.0); }
+    60%, 100% { opacity: 0; transform: scale(1.35); }
+}
+
+/* ---- cobweb corners (Halloween) ---- */
+.jpx-fx-corner {
+    position: absolute;
+    font-size: 3rem;
+    opacity: 0.45;
+    filter: drop-shadow(0 0 6px #000);
+}
+.jpx-fx-corner-tl { top: 2.4rem; left: 0.1rem; }
+.jpx-fx-corner-tr { top: 2.4rem; right: 0.1rem; transform: scaleX(-1); }
+
+/* ---- ambient: Halloween vignette + candle flicker (body class from applyTheme) ---- */
+body.jpx-fx-halloween::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 44;
+    background: radial-gradient(125% 95% at 50% 38%, transparent 52%, rgba(24, 6, 34, 0.6) 100%);
+    animation: jpx-fx-candle 4.2s ease-in-out infinite;
+}
+@keyframes jpx-fx-candle {
+    0%, 100% { opacity: 0.82; }
+    43% { opacity: 1; }
+    55% { opacity: 0.74; }
+    62% { opacity: 0.96; }
+    78% { opacity: 0.86; }
+}
+
+/* ---- accessibility: no motion, no injected layer already skipped in JS; kill ambient too ---- */
+@media (prefers-reduced-motion: reduce) {
+    .jpx-fx { display: none !important; }
+    body.jpx-fx-halloween::before { animation: none !important; }
+}

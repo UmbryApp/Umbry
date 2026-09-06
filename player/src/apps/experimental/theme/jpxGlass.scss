@@ -1,0 +1,93 @@
+/* Umbry — overlay surfaces styled to match the "Select Version" popup (.jpx-sub-card): a dark,
+   nearly-opaque, cleanly-rounded modal card with a subtle border, a soft blur, and a big soft
+   shadow. Applied to every menu / popup / action sheet / dialog / custom picker so they're all
+   consistent with that popup. (.jpx-sub-card itself keeps its own identical styling in jpxDetail.scss
+   and is intentionally NOT overridden here.) */
+
+.MuiMenu-paper,
+.MuiPopover-paper,
+.actionSheetContent,
+.dialog,
+.jpx-sub-card,
+.jpx-account-card,
+.jpx-pin-card,
+.jpx-settings-paper,
+.jpx-server-select {
+    /* the EXACT transparent frosted material from the Subtitle Track / Select Version popup
+       (.jpx-sub-card) — one identical look for every menu, popup and dialog. */
+    background-color: rgba(22, 20, 28, 0.52) !important;
+    /* MUI Paper stacks an elevation overlay via background-image in dark mode, which makes these
+       read as MORE opaque than the plain popup — remove it so only the translucent colour shows. */
+    background-image: none !important;
+    backdrop-filter: blur(30px) saturate(1.3) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(1.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6) !important;
+}
+/* MUI clamps menu/popover paper radius via .MuiPaper-rounded — out-specify it to match the box. */
+.MuiMenu-paper.MuiPaper-rounded,
+.MuiPopover-paper.MuiPaper-rounded,
+.actionSheetContent.MuiPaper-rounded { border-radius: 20px !important; }
+
+/* Inner wrappers transparent so the one frosted panel shows through (no stacked opaque layers). */
+.dialog .formDialogHeader,
+.dialog .formDialogContent,
+.dialog .formDialogFooter,
+.dialog .dialogContentInner,
+.MuiMenu-paper .MuiList-root,
+.MuiPopover-paper .MuiList-root,
+.actionSheetContent .actionSheetScroller {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+}
+
+/* Menu / action-sheet rows echo the Select Version list: roomy padding, a hairline divider between
+   rows, transparent by default, and a soft rounded highlight on hover (like its selected row). */
+.MuiMenu-paper .MuiMenuItem-root,
+.MuiPopover-paper .MuiMenuItem-root {
+    background-color: transparent !important;
+    padding: 0.8em 1.1em !important;
+    border-radius: 10px !important;
+}
+.MuiMenu-paper .MuiMenuItem-root + .MuiMenuItem-root,
+.MuiPopover-paper .MuiMenuItem-root + .MuiMenuItem-root {
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.MuiMenu-paper .MuiMenuItem-root:hover,
+.MuiPopover-paper .MuiMenuItem-root:hover,
+.actionSheetContent .listItem:hover,
+.actionSheetContent .actionSheetMenuItem:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Frost the scrim behind an open popup a touch, matching the Select Version overlay. */
+.dialogBackdrop.dialogBackdropOpened {
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+
+/* Library toolbar buttons (A–Z, Filter, Sort, View) styled like the detail page's circular
+   white-icon action buttons (.jpx-dh-abtn-ic): a translucent circle, hairline border, white icon. */
+.jpx-lib-actions .MuiButtonBase-root {
+    min-width: 0 !important;
+    width: 2.9em !important;
+    height: 2.9em !important;
+    padding: 0 !important;
+    margin: 0 0.3em !important;
+    border-radius: 50% !important;
+    background-color: rgba(255, 255, 255, 0.07) !important;
+    border: 1px solid rgba(255, 255, 255, 0.28) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+    background-image: none !important;
+}
+.jpx-lib-actions .MuiButtonBase-root:hover {
+    background-color: rgba(255, 255, 255, 0.16) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+.jpx-lib-actions .MuiSvgIcon-root {
+    font-size: 1.35em !important;
+    color: #fff !important;
+}

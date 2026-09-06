@@ -1,0 +1,77 @@
+.emby-scrollbuttons {
+    position: absolute;
+    top: 0;
+    align-items: center;
+    justify-content: center;
+    min-width: 104px;
+    min-height: 24px;
+    padding-top: 0.85em;
+    z-index: 1;
+    color: #fff;
+    display: flex;
+
+    [dir="ltr"] & {
+        right: 0;
+    }
+
+    [dir="rtl"] & {
+        left: 0;
+    }
+}
+
+.emby-scrollbuttons-button > .material-icons {
+    min-width: 24px;
+    min-height: 24px;
+    display: block;
+}
+
+/* Umbry: simple white chevron row-scroll buttons (top-right of each row). */
+.emby-scrollbuttons-button {
+    background: none; border: 0; color: #fff; opacity: 0.85; cursor: pointer; padding: 0 0.1em;
+    transition: opacity 0.15s ease;
+}
+.emby-scrollbuttons-button:hover { opacity: 1; }
+.emby-scrollbuttons-button.hide { display: none !important; }
+.emby-scrollbuttons-button[disabled] { opacity: 0.25; cursor: default; }
+.emby-scrollbuttons-button > .material-icons { font-size: 1.75em; }
+
+/* ============================================================================
+   Umbry (bug fix): the < > row-scroll chevrons never appeared on the home rows.
+   Cause 1: desktop touch-capable machines had them JS-gated off (fixed in
+   emby-scroller.js by dropping the !browser.touch gate). Cause 2: the
+   .emby-scrollbuttons overlay is position:absolute but the home row
+   (.verticalSection) was not a positioned ancestor, so the buttons never
+   anchored to the row top-right.
+   Styling: plain, always-visible white chevron glyphs at the row ends (no
+   background, no frosting, no theme color) so users see the rows scroll.
+   Scoped to home rows so detail/search rows are untouched. */
+.homeSectionsContainer .verticalSection {
+    position: relative;
+}
+.homeSectionsContainer .verticalSection .emby-scrollbuttons {
+    opacity: 1;
+    padding-top: 0.35em;
+}
+.homeSectionsContainer .verticalSection .emby-scrollbuttons-button {
+    background: none;
+    border: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    color: rgba(255, 255, 255, 0.9);
+    opacity: 0.9;
+    padding: 0 0.15em;
+}
+.homeSectionsContainer .verticalSection .emby-scrollbuttons-button:hover {
+    color: #fff;
+    opacity: 1;
+}
+.homeSectionsContainer .verticalSection .emby-scrollbuttons-button > .material-icons {
+    font-size: 1.5em;
+}
+/* Never show these on touch/TV layouts (the JS gate already prevents creation on
+   TV/mobile; this is belt-and-braces so a hybrid touch device does not get them). */
+.layout-tv .homeSectionsContainer .verticalSection .emby-scrollbuttons,
+.layout-mobile .homeSectionsContainer .verticalSection .emby-scrollbuttons {
+    display: none !important;
+}

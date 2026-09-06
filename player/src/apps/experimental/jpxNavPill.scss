@@ -1,0 +1,288 @@
+/* Umbry — Moonfin-style nav: the logo is the head of the pill; icons slide out of it. */
+
+.jpx-nav {
+    position: fixed;
+    z-index: 1300;
+    pointer-events: none;
+}
+
+/* Position at the chosen anchor. Centres use a transform to stay pinned to the midpoint as the
+   pill grows when it opens. Right-anchored pills grow leftward (toward the screen), so they never
+   spill off the right edge. */
+.jpx-nav--top-left { top: 0.7rem; left: 1rem; }
+.jpx-nav--top-center { top: 0.7rem; left: 50%; transform: translateX(-50%); }
+.jpx-nav--top-right { top: 0.7rem; right: 1rem; }
+.jpx-nav--left-center { top: 50%; left: 0.7rem; transform: translateY(-50%); }
+.jpx-nav--right-center { top: 50%; right: 0.7rem; transform: translateY(-50%); }
+.jpx-nav--bottom-left { bottom: 0.7rem; left: 1rem; }
+.jpx-nav--bottom-center { bottom: 0.7rem; left: 50%; transform: translateX(-50%); }
+.jpx-nav--bottom-right { bottom: 0.7rem; right: 1rem; }
+
+.jpx-nav > * {
+    pointer-events: auto;
+}
+
+/* The pill wraps the logo + the (revealing) icons, and grows as they slide out */
+.jpx-nav-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+    padding: 0.28rem;
+    background: rgba(18, 18, 24, 0.62);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.jpx-nav--v .jpx-nav-pill {
+    flex-direction: column;
+}
+
+/* Logo — the head of the pill, always visible, toggles the reveal */
+.jpx-nav-logo {
+    position: relative;
+    flex: 0 0 auto;
+    width: 2.7rem;
+    height: 2.7rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+
+.jpx-nav-logo:hover {
+    transform: scale(1.06);
+}
+
+.jpx-nav-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Directional chevron hint on the logo edge */
+/* Chevron toggle button — last child of the pill. Collapsed it sits by the logo (pointing the
+   slide direction); open, the revealed icons push it to the tail and it rotates 180 to point
+   back at the logo. Clickable, same as the logo. */
+.jpx-nav-chevron-btn {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    opacity: 0.8;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.jpx-nav-chevron-btn:hover {
+    opacity: 1;
+}
+
+.jpx-nav--h .jpx-nav-chevron-btn {
+    width: 1.5rem;
+    height: 2.6rem;
+}
+
+.jpx-nav--v .jpx-nav-chevron-btn {
+    width: 2.6rem;
+    height: 1.5rem;
+}
+
+.jpx-nav-chevron {
+    font-size: 1.05rem !important;
+    line-height: 1;
+    transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.jpx-nav.open .jpx-nav-chevron {
+    transform: rotate(180deg);
+}
+
+/* Reveal container — grid 0fr->1fr animates the slide-out smoothly (real width/height growth) */
+.jpx-nav-items {
+    display: grid;
+    overflow: hidden;
+    transition: grid-template-columns 0.34s cubic-bezier(0.2, 0.8, 0.2, 1),
+        grid-template-rows 0.34s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.jpx-nav--h .jpx-nav-items {
+    grid-template-columns: 0fr;
+}
+
+.jpx-nav--h.open .jpx-nav-items {
+    grid-template-columns: 1fr;
+}
+
+.jpx-nav--v .jpx-nav-items {
+    grid-template-rows: 0fr;
+}
+
+.jpx-nav--v.open .jpx-nav-items {
+    grid-template-rows: 1fr;
+}
+
+.jpx-nav-items-inner {
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    gap: 0.1rem;
+    opacity: 0;
+    transition: opacity 0.26s ease 0.04s;
+}
+
+.jpx-nav--v .jpx-nav-items-inner {
+    flex-direction: column;
+}
+
+.jpx-nav.open .jpx-nav-items-inner {
+    opacity: 1;
+}
+
+/* Icon buttons */
+.jpx-nav-btn {
+    flex: 0 0 auto;
+    width: 2.6rem;
+    height: 2.6rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #c9c9d3;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jpx-nav-btn .material-icons {
+    font-size: 1.4rem;
+}
+
+.jpx-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.09);
+    color: #fff;
+}
+
+.jpx-nav-btn.active {
+    /* highlighted = accent ring + accent icon, no fill (circle body keeps the default look) */
+    color: var(--jpx-accent, #c235ff);
+    background: transparent;
+    box-shadow: inset 0 0 0 2px var(--jpx-accent, #c235ff);
+}
+
+/* User avatar button */
+.jpx-nav-avatar {
+    padding: 0;
+}
+
+.jpx-nav-avatar:hover {
+    background: transparent;
+}
+
+/* Back arrow — permanent head of the pill (before the logo), always visible on every page. */
+.jpx-nav-back {
+    flex: 0 0 auto;
+    width: 2.4rem;
+    height: 2.4rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #c9c9d3;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.jpx-nav-back .material-icons {
+    font-size: 1.35rem;
+}
+
+.jpx-nav-back:hover {
+    background: rgba(255, 255, 255, 0.09);
+    color: #fff;
+    transform: translateX(-1px);
+}
+
+.jpx-nav-avatar .MuiAvatar-root {
+    width: 1.95rem;
+    height: 1.95rem;
+    font-size: 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.jpx-nav-avatar:hover .MuiAvatar-root {
+    border-color: var(--jpx-accent, #c235ff);
+    box-shadow: 0 0 12px var(--jpx-accent-glow, rgba(194, 53, 255, 0.6));
+}
+
+/* Quieter move/reposition affordance */
+.jpx-nav-move {
+    color: #6a6a76;
+}
+
+.jpx-nav-move .material-icons {
+    font-size: 1.15rem;
+}
+
+.jpx-nav-move:hover {
+    color: #c9c9d3;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 600px) {
+    .jpx-nav-btn {
+        width: 2.3rem;
+        height: 2.3rem;
+    }
+
+    .jpx-nav-logo {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+}
+
+
+/* Content shift so the floating pill doesn't cover content — nudge the app off whichever edge the
+   pill sits on. Any top-* anchor shifts down, any bottom-* anchor shifts up, the side centres shift
+   inward. */
+body[data-jpx-nav-pos^="top-"] .jpx-app-main { padding-top: 3.4rem; }
+body[data-jpx-nav-pos^="bottom-"] .jpx-app-main { padding-bottom: 3.4rem; }
+body[data-jpx-nav-pos="left-center"] .jpx-app-main { padding-left: 4rem; }
+body[data-jpx-nav-pos="right-center"] .jpx-app-main { padding-right: 4rem; }
+
+/* jpx-nav mobile scroll: on a narrow screen a horizontal (top/bottom) pill with every icon revealed
+   overflows the viewport and pushes the user avatar (settings / sign out) off the end. Cap the pill
+   to the viewport and let the icon strip scroll so the avatar is always reachable. */
+@media (max-width: 680px) {
+    .jpx-nav--h .jpx-nav-pill {
+        max-width: calc(100vw - 2rem);
+    }
+    .jpx-nav--h .jpx-nav-items {
+        min-width: 0;
+    }
+    .jpx-nav--h.open .jpx-nav-items-inner {
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .jpx-nav--h.open .jpx-nav-items-inner::-webkit-scrollbar { display: none; }
+}

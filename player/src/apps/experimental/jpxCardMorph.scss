@@ -1,0 +1,122 @@
+/* Umbry — Moonfin in-flow card morph: hovered card expands to a landscape backdrop card,
+   with a floating info panel anchored right below it (overlaps into the gap, Moonfin-style). */
+
+/* Cards animate their width so neighbors reflow smoothly when one expands. */
+.card {
+    transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.card .cardPadder {
+    transition: padding-bottom 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* The morphed card */
+.card.jpx-morph {
+    width: 22% !important;
+    z-index: 8;
+    position: relative;
+    /* drop 'paint' containment so nothing about the card clips */
+    contain: layout style !important;
+}
+
+/* Portrait/square aspect -> landscape backdrop */
+.card.jpx-morph .cardPadder {
+    padding-bottom: 56.25% !important;
+}
+
+.card.jpx-morph .cardImageContainer {
+    background-size: cover !important;
+    background-position: center !important;
+    border-radius: 14px 14px 0 0 !important;
+}
+
+/* Library cards render an <img>; hide it so the thumb (set as the container background) shows,
+   which survives React re-renders that would otherwise reset the img src. */
+.card.jpx-morph .cardImageContainer img {
+    opacity: 0 !important;
+    transition: opacity 0.2s ease;
+}
+
+.card.jpx-morph .cardBox {
+    background: var(--jpx-surface, #101016) !important;
+    border-radius: 14px 14px 0 0 !important;
+    /* One continuous accent outline via a REAL border (top + sides), which follows the rounded
+       corners cleanly. The previous offset box-shadows left notches at the top corners and broke
+       at the panel seam on Emby/Plex. The bottom edge is omitted so it joins the panel below; the
+       glow stays a separate blurred shadow. box-sizing keeps the card's outer size unchanged. */
+    box-sizing: border-box;
+    border: 2px solid var(--jpx-accent, #c235ff);
+    border-bottom: 0;
+    box-shadow: 0 0 30px var(--jpx-accent-glow, rgba(194, 53, 255, 0.4));
+}
+
+/* Hide Jellyfin's own title/year line (our floating panel replaces it) */
+.card.jpx-morph .cardText {
+    display: none !important;
+}
+
+/* Floating info panel — anchored below the card via JS (position/size set inline) */
+.jpx-morph-panel {
+    position: fixed;
+    z-index: 1200;
+    box-sizing: border-box;
+    padding: 0.5em 0.75em 0.7em;
+    text-align: left;
+    background: var(--jpx-surface, #101016);
+    border-radius: 0 0 14px 14px;
+    /* Matches the card's outline (sides + bottom), top edge omitted so it joins the card above.
+       The JS anchors this panel to the cardBox and overlaps it by 2px, so the side borders read as
+       one continuous rounded outline with no seam gap on any server. */
+    border: 2px solid var(--jpx-accent, #c235ff);
+    border-top: 0;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6),
+        0 0 30px var(--jpx-accent-glow, rgba(194, 53, 255, 0.4));
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.22s ease 0.06s, transform 0.22s ease 0.06s;
+}
+
+.jpx-morph-panel.active {
+    opacity: 1;
+    transform: none;
+}
+
+.jpx-morph-title {
+    font-weight: 700;
+    font-size: 1rem;
+    line-height: 1.15;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.jpx-morph-meta {
+    font-size: 0.76rem;
+    color: var(--jpx-accent, #c235ff);
+    margin: 0.2em 0 0.35em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.jpx-morph-overview {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #cfcfd6;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Suppress Jellyfin's stock hover overlay (play button, favorite/check/menu, dimming scrim) on the
+   morph — the morph shows the clean backdrop still + its own info panel instead of the overlay. */
+.card .cardOverlayButton { display: none !important; }  /* hide stock play/favorite/menu buttons on ALL cards (removes the hover flash); keep .cardOverlayContainer as the itemAction click target */
+.card.jpx-morph .cardOverlayContainer { background: transparent !important; box-shadow: none !important; }
+
+/* OLED vivid: the stock cardPadder placeholder is rgb(36,36,36) — a faint gray box that shows
+   as a hairline against the pure-black OLED background. Make it transparent so nothing shows. */
+body.jpx-oled-vivid .cardPadder { background: transparent !important; }

@@ -1,0 +1,40 @@
+# Umbry — run the Player (web app) and the optional sync Server together.
+#
+# Quick start:
+#   docker compose up -d --build
+#
+# Then open the Player at  http://<this-host>:8080
+# and (optionally) connect it to the Server at  http://<this-host>:8790
+#
+# Everything below is safe to tweak — change ports, the data volume, or the
+# environment to suit your setup. Don't want sync? Delete the whole "server" block.
+
+services:
+  # The Umbry Player — the web app you watch in (open it in a browser).
+  player:
+    build: ./player
+    image: umbry-player
+    container_name: umbry-player
+    ports:
+      - "8080:80"          # host:container — change 8080 to any free host port
+    restart: unless-stopped
+
+  # The optional Umbry Server — syncs your settings across devices.
+  # It never touches your media. Delete this block if you only want the Player.
+  server:
+    build: ./server
+    image: umbry-server
+    container_name: umbry-server
+    ports:
+      - "8790:8790"        # connect the Player to http://<host>:8790
+    volumes:
+      - umbry-data:/data   # accounts, settings, and the auto-generated keys live here
+    # environment:         # all optional — sensible defaults are built in
+    #   - TOKEN_TTL=30d
+    #   - CORS_ORIGINS=https://umbry.example.com   # comma-separated; default allows any
+    #   - PORT=8790
+    #   - DATA_DIR=/data
+    restart: unless-stopped
+
+volumes:
+  umbry-data:

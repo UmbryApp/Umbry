@@ -1,0 +1,59 @@
+/* Umbry App Theme picker — preset cards with a gradient sample bar. Reuses .jpx-settings-*
+   shell styling from jpxSettingsDrawer.scss. */
+
+.jpx-apptheme-intro {
+    margin: 0 0.3rem 0.9rem;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    color: #9a9aa8;
+}
+
+.jpx-apptheme-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.95rem 1rem 1.05rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+.jpx-apptheme-card:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateX(-2px);
+}
+.jpx-apptheme-card.selected {
+    border-color: var(--jpx-accent, #c235ff);
+    box-shadow: 0 0 0 1px var(--jpx-accent, #c235ff), 0 0 22px var(--jpx-accent-glow, rgba(194, 53, 255, 0.35));
+}
+
+.jpx-apptheme-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.jpx-apptheme-name {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #fff;
+}
+.jpx-apptheme-check {
+    color: var(--jpx-accent, #c235ff);
+    font-size: 1.3rem !important;
+}
+.jpx-apptheme-desc {
+    font-size: 0.82rem;
+    line-height: 1.3;
+    color: #9a9aa8;
+}
+.jpx-apptheme-bar {
+    display: block;
+    width: 100%;
+    height: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}

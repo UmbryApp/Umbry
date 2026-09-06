@@ -1,0 +1,228 @@
+/* Umbry — Moonfin-style Settings slide-out drawer.
+   Moonfin's structure (dark rounded rows: icon holder + title + subtitle + trailing control),
+   Umbry's accent (purple), so it stays on-brand with the rest of the app. */
+
+.jpx-settings-paper.jpx-settings-paper {
+    width: 400px;
+    max-width: 92vw;
+    background: #0d0d13;
+    color: #fff;
+    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    background-image: none;
+    display: flex;
+    flex-direction: column;
+    padding: 1.1rem 1rem 1rem;
+    box-sizing: border-box;
+    /* Start the drawer just below the fixed nav pill + clock (which sit at top ~1rem, ~2.7rem tall)
+       so the "Settings" header is never tucked under them. Clears the notch/safe-area too. */
+    --jpx-drawer-top: calc(env(safe-area-inset-top, 0px) + 3.75rem);
+    top: var(--jpx-drawer-top);
+    height: calc(100% - var(--jpx-drawer-top));
+    max-height: calc(100% - var(--jpx-drawer-top));
+    border-top-left-radius: 16px;
+}
+
+.jpx-settings-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.2rem 0.4rem 1rem;
+}
+
+.jpx-settings-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    flex: 1 1 auto;
+}
+
+.jpx-settings-close {
+    flex: 0 0 auto;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #c9c9d3;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.jpx-settings-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.jpx-settings-list {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.15rem 0.15rem 0.5rem;
+}
+
+/* Row card — the Moonfin building block */
+.jpx-settings-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+.jpx-settings-row:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--jpx-accent, #c235ff);
+    transform: translateX(-2px);
+}
+
+.jpx-settings-ico {
+    flex: 0 0 auto;
+    width: 2.6rem;
+    height: 2.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(194, 53, 255, 0.14);
+    color: var(--jpx-accent, #c235ff);
+}
+.jpx-settings-ico .material-icons {
+    font-size: 1.4rem;
+}
+
+.jpx-settings-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.jpx-settings-row-title {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #fff;
+}
+.jpx-settings-row-sub {
+    font-size: 0.8rem;
+    line-height: 1.25;
+    color: #9a9aa8;
+}
+
+.jpx-settings-chev {
+    flex: 0 0 auto;
+    color: #6f6f7c;
+    font-size: 1.3rem !important;
+}
+
+.jpx-settings-foot {
+    flex: 0 0 auto;
+    padding: 0.6rem 0.15rem 0.15rem;
+    margin-top: 0.4rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Sign out — warm tint to set it apart from the neutral rows */
+.jpx-settings-signout .jpx-settings-ico {
+    background: rgba(255, 86, 86, 0.14);
+    color: #ff6b6b;
+}
+.jpx-settings-signout:hover {
+    border-color: rgba(255, 86, 86, 0.6);
+}
+
+/* ---- config-driven controls ---- */
+.jpx-settings-section-header {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--jpx-accent, #c235ff);
+    margin: 1rem 0.35rem 0.15rem;
+}
+
+/* Toggle switch (CSS) */
+.jpx-toggle {
+    flex: 0 0 auto;
+    width: 2.4rem;
+    height: 1.35rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    position: relative;
+    transition: background 0.2s ease;
+}
+.jpx-toggle.on { background: var(--jpx-accent, #c235ff); }
+.jpx-toggle-knob {
+    position: absolute;
+    top: 0.15rem;
+    left: 0.15rem;
+    width: 1.05rem;
+    height: 1.05rem;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+}
+.jpx-toggle.on .jpx-toggle-knob { transform: translateX(1.05rem); }
+
+/* Value pill */
+.jpx-pill {
+    flex: 0 0 auto;
+    padding: 0.22rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--jpx-accent, #c235ff);
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.jpx-pill-static { color: #c9c9d3; }
+
+/* Slider */
+.jpx-slider-wrap {
+    flex: 0 0 auto;
+    width: 120px;
+    display: flex;
+    align-items: center;
+}
+.jpx-slider-wrap .MuiSlider-root {
+    color: var(--jpx-accent, #c235ff);
+    padding: 0.6rem 0;
+}
+
+/* Color swatch */
+.jpx-color {
+    flex: 0 0 auto;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    overflow: hidden;
+    display: inline-block;
+}
+.jpx-color input {
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    border: 0;
+    padding: 0;
+}
+
+.jpx-settings-prose {
+    padding: 0.4rem 1.15rem 1rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.82);
+}
+.jpx-settings-prose p { margin: 0 0 0.75rem; }
+.jpx-settings-prose p:last-child { margin-bottom: 0; }

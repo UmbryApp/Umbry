@@ -1,0 +1,268 @@
+/* Umbry — custom music player. Our own design: ambient blurred-art glow over black,
+   rounded art, themed ember scrubber, frosted queue/options sheets. */
+
+.jpx-mp {
+    position: fixed;
+    inset: 0;
+    z-index: 1500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: max(2.5vh, 14px) 6vw 3vh;
+    color: #fff;
+    background: #000;
+    overflow: hidden auto;
+    transition: transform 0.28s ease, opacity 0.28s ease;
+}
+.jpx-mp-closed { transform: translateY(102%); opacity: 0; pointer-events: none; }
+.jpx-mp-glow {
+    position: fixed;
+    inset: -18%;
+    background-size: cover;
+    background-position: center;
+    filter: blur(64px) saturate(1.35) brightness(0.55);
+    z-index: 0;
+}
+.jpx-mp-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background: radial-gradient(120% 90% at 50% 8%, rgba(6, 5, 14, 0.1) 0%, rgba(6, 5, 14, 0.55) 55%, rgba(6, 5, 14, 0.9) 100%);
+}
+.jpx-mp > *:not(.jpx-mp-glow):not(.jpx-mp-scrim) { position: relative; z-index: 1; }
+
+.jpx-mp-head { width: 100%; display: flex; justify-content: space-between; margin-bottom: 1.2em; }
+.jpx-mp-head button { border: 0; background: rgba(255, 255, 255, 0.08); border-radius: 50%; width: 2.6em; height: 2.6em; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+.jpx-mp-art {
+    width: min(78vw, 46vh, 460px);
+    aspect-ratio: 1;
+    border-radius: 22px;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.65);
+    margin-bottom: 1.6em;
+}
+.jpx-mp-title { font-size: 1.6rem; font-weight: 800; text-align: center; max-width: 92%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jpx-mp-artist { font-size: 1.05rem; color: var(--jpx-t-accent, #9385F5); font-weight: 600; margin-top: 0.2em; }
+.jpx-mp-album { font-size: 0.95rem; color: rgba(255, 255, 255, 0.55); margin-top: 0.15em; margin-bottom: 0.6em; max-width: 92%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jpx-mp-fav { border: 0; background: none; color: rgba(255, 255, 255, 0.75); cursor: pointer; margin-bottom: 0.4em; }
+.jpx-mp-fav .material-icons { font-size: 1.7em; }
+.jpx-mp-fav.on { color: #FF9A4B; }
+
+.jpx-mp-slider-wrap { width: 100%; max-width: 560px; }
+.jpx-mp-slider {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 5px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--jpx-t-range-progress, var(--jpx-t-accent, #9385F5)) var(--pct, 0%), rgba(255, 255, 255, 0.18) var(--pct, 0%));
+    outline: none;
+    cursor: pointer;
+}
+.jpx-mp-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: var(--jpx-t-range-thumb, var(--jpx-t-accent, #9385F5));
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.jpx-mp-times { display: flex; justify-content: space-between; color: rgba(255, 255, 255, 0.65); font-size: 0.85rem; margin-top: 0.35em; font-variant-numeric: tabular-nums; }
+
+.jpx-mp-transport { display: flex; align-items: center; gap: clamp(1em, 6vw, 2.4em); margin: 0.9em 0 1.2em; }
+.jpx-mp-transport button { border: 0; background: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.jpx-mp-transport .material-icons { font-size: 2em; }
+.jpx-mp-shuffle .material-icons, .jpx-mp-repeat .material-icons { font-size: 1.5em; color: rgba(255, 255, 255, 0.7); }
+.jpx-mp-shuffle.on .material-icons, .jpx-mp-repeat.on .material-icons { color: var(--jpx-t-accent, #9385F5); }
+.jpx-mp-play {
+    width: 4.4em;
+    height: 4.4em;
+    border-radius: 50%;
+    background: var(--jpx-t-accent, #9385F5) !important;
+    color: var(--jpx-t-on-accent, #160E2A) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.jpx-mp-play .material-icons { font-size: 2.4em; }
+.jpx-mp-play:active { transform: scale(0.96); }
+
+.jpx-mp-upnext {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.07);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.6em 2.4em;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* ---- sheets ---- */
+.jpx-mp-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2200;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.jpx-mp-card {
+    width: min(680px, 100vw);
+    max-height: 72vh;
+    overflow: hidden auto;
+    border-radius: 22px 22px 0 0;
+    background: rgba(24, 22, 34, 0.78);
+    -webkit-backdrop-filter: blur(28px) saturate(1.25);
+    backdrop-filter: blur(28px) saturate(1.25);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom: 0;
+    padding: 1em 0 max(1.2em, env(safe-area-inset-bottom));
+}
+.jpx-mp-card-title { font-size: 1.35rem; font-weight: 800; color: #fff; padding: 0.2em 1.1em 0.5em; }
+.jpx-mp-empty { padding: 1em 1.2em; color: rgba(255, 255, 255, 0.6); }
+
+.jpx-mp-qrow { display: flex; align-items: center; gap: 0.9em; width: 100%; border: 0; background: none; color: #fff; text-align: left; padding: 0.7em 1.1em; cursor: pointer; }
+.jpx-mp-qrow.now { background: rgba(147, 133, 245, 0.16); }
+.jpx-mp-qnum { flex: 0 0 2em; text-align: center; color: rgba(255, 255, 255, 0.5); font-variant-numeric: tabular-nums; }
+.jpx-mp-qbody { min-width: 0; display: flex; flex-direction: column; }
+.jpx-mp-qname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jpx-mp-qsub { font-size: 0.85rem; color: rgba(255, 255, 255, 0.55); }
+
+/* tiny animated equalizer for the playing row */
+.jpx-mp-eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+.jpx-mp-eq i { width: 3px; background: var(--jpx-t-range-progress, var(--jpx-t-accent, #9385F5)); animation: jpx-eq 0.9s ease-in-out infinite; }
+.jpx-mp-eq i:nth-child(2) { animation-delay: 0.25s; }
+.jpx-mp-eq i:nth-child(3) { animation-delay: 0.5s; }
+@keyframes jpx-eq { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+
+.jpx-mp-group { padding: 0.7em 1.1em 0.35em; font-size: 0.82rem; letter-spacing: 0.05em; text-transform: uppercase; color: rgba(255, 255, 255, 0.55); }
+.jpx-mp-chips { display: flex; flex-wrap: wrap; gap: 0.55em; padding: 0 1.1em; }
+.jpx-mp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.5em 1.05em;
+    font-size: 0.98rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.jpx-mp-chip.on { background: var(--jpx-t-accent, #9385F5); border-color: var(--jpx-t-accent, #9385F5); color: var(--jpx-t-on-accent, #160E2A); }
+.jpx-mp-chip .material-icons { font-size: 1.05em; }
+.jpx-mp-saveq {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    border: 0;
+    background: none;
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 600;
+    padding: 1em 1.15em 0.4em;
+    cursor: pointer;
+}
+
+/* ---- persistent mini player pill (floats under the nav, follows every screen) ---- */
+.jpx-mpill {
+    position: fixed;
+    top: 4.9em;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    gap: 0.55em;
+    width: min(92vw, 560px);
+    padding: 0.4em 0.7em 0.4em 0.45em;
+    border-radius: 999px;
+    background: rgba(20, 18, 30, 0.62);
+    -webkit-backdrop-filter: blur(22px) saturate(1.25);
+    backdrop-filter: blur(22px) saturate(1.25);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+}
+.jpx-mpill-art {
+    flex: 0 0 auto;
+    width: 2.6em;
+    height: 2.6em;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+.jpx-mpill-txt {
+    flex: 1;
+    min-width: 0;
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.98rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.jpx-mpill button {
+    flex: 0 0 auto;
+    border: 0;
+    background: none;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0.25em;
+}
+.jpx-mpill .material-icons { font-size: 1.5em; }
+
+/* The stock bottom now-playing bar is fully replaced by the Umbry pill + player — retire it
+   outright (scoping it to the pill's lifetime let it flash back with a stopped-state slider
+   after Stop, the "blue section with a progress bar" Sean caught). */
+.nowPlayingBar { display: none !important; }
+
+
+/* If a video player is up, never let the music overlay or pill bleed behind it. The overlay is
+   appended to <body> at z-1500 (above the video's z-1000), so a stray one would otherwise show the
+   previous track's art under the video OSD. */
+body:has(.videoPlayerContainer) .jpx-mp,
+body:has(.videoPlayerContainer) .jpx-mpill { display: none !important; }
+
+/* Umbry: music player volume control */
+.jpx-mp-vol { display: flex; align-items: center; gap: 0.6em; width: min(320px, 82vw); margin: 0.1em auto 0.3em; }
+.jpx-mp-vol-ic { color: rgba(255, 255, 255, 0.85); cursor: pointer; font-size: 1.4em; }
+.jpx-mp-vol-slider {
+    -webkit-appearance: none; appearance: none; flex: 1 1 auto; height: 4px; border-radius: 99px; cursor: pointer;
+    background: linear-gradient(to right, #fff var(--v, 100%), rgba(255, 255, 255, 0.25) var(--v, 100%));
+}
+.jpx-mp-vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%; background: #fff; cursor: pointer; }
+.jpx-mp-vol-slider::-moz-range-thumb { width: 13px; height: 13px; border: 0; border-radius: 50%; background: #fff; cursor: pointer; }
+
+/* Umbry (bug fix): Up Next / player-options sheet body — cap the height and give it a themed
+   vertical scrollbar so a long queue is fully reachable instead of running off the bottom.
+   The sheet title stays put; only the list scrolls. */
+.jpx-mp-card-body {
+    max-height: calc(72vh - 3.6em);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--jpx-t-accent, #9385F5) rgba(255, 255, 255, 0.06);
+}
+.jpx-mp-card-body::-webkit-scrollbar { width: 9px; }
+.jpx-mp-card-body::-webkit-scrollbar-thumb {
+    background: var(--jpx-t-accent, #9385F5);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+.jpx-mp-card-body::-webkit-scrollbar-thumb:hover {
+    filter: brightness(1.12);
+    background-clip: content-box;
+}
+.jpx-mp-card-body::-webkit-scrollbar-track { background: transparent; }

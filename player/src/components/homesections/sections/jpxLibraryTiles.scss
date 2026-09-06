@@ -1,0 +1,86 @@
+/* Umbry "My Media" — Moonfin-style library collage cards with a reflection. */
+
+.jpx-libcards-row {
+    display: flex;
+    gap: 1.1rem;
+    overflow-x: auto;
+    padding: 0.4rem 4vw 1.2rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.jpx-libcards-row::-webkit-scrollbar {
+    height: 0;
+    width: 0;
+    display: none;
+}
+
+.jpx-libcards-row::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 3px;
+}
+
+.jpx-libcard {
+    flex: 0 0 auto;
+    width: 15rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+}
+
+.jpx-libcard-collage {
+    display: flex;
+    gap: 2px;
+    height: 8.4rem;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #141419;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    /* the Moonfin reflection */
+    -webkit-box-reflect: below 3px linear-gradient(transparent 55%, rgba(255, 255, 255, 0.14));
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.jpx-libcard:hover .jpx-libcard-collage {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6),
+        0 0 0 2px var(--jpx-accent, #c235ff),
+        0 0 30px var(--jpx-accent-glow, rgba(194, 53, 255, 0.4));
+}
+
+.jpx-libcard-collage img {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.jpx-libcard-empty {
+    flex: 1;
+    background: linear-gradient(135deg, #1c1c26, #101016);
+}
+
+.jpx-libcard-title {
+    margin-top: 0.6rem;
+    padding-left: 2px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #eaeaf0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 700px) {
+    .jpx-libcard {
+        width: 12rem;
+    }
+
+    .jpx-libcard-collage {
+        height: 6.8rem;
+    }
+}

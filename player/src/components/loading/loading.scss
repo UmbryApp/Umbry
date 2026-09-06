@@ -1,0 +1,347 @@
+/* ---- Umbry loading = the living-gradient aurora (matches the boot splash) ---- */
+.jpx-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    overflow: hidden;
+    display: none;
+    background: radial-gradient(ellipse 120% 100% at 50% 45%, #0c0a14 0%, #08070d 55%, #050509 100%);
+    pointer-events: none;
+}
+
+.jpx-loader.mdlSpinnerActive {
+    display: block;
+    pointer-events: auto;
+    animation: jpxLoaderFadeIn 0.35s ease;
+}
+
+@keyframes jpxLoaderFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.jpx-loader .jpx-aurora { position: absolute; inset: -15%; z-index: 1; filter: blur(78px); }
+.jpx-loader .jpx-aurora-blob { position: absolute; border-radius: 50%; mix-blend-mode: screen; }
+.jpx-loader .jpx-aurora-1 {
+    width: 58vw; height: 58vw; left: 12%; top: 18%;
+    background: radial-gradient(circle, rgba(194, 53, 255, 0.78) 0%, rgba(194, 53, 255, 0) 62%);
+    animation: jpxAur1 19s ease-in-out infinite;
+}
+.jpx-loader .jpx-aurora-2 {
+    width: 52vw; height: 52vw; left: 42%; top: 28%;
+    background: radial-gradient(circle, rgba(0, 190, 255, 0.72) 0%, rgba(0, 190, 255, 0) 62%);
+    animation: jpxAur2 23s ease-in-out infinite;
+}
+.jpx-loader .jpx-aurora-3 {
+    width: 46vw; height: 46vw; left: 28%; top: 8%;
+    background: radial-gradient(circle, rgba(120, 70, 255, 0.72) 0%, rgba(120, 70, 255, 0) 62%);
+    animation: jpxAur3 27s ease-in-out infinite;
+}
+
+@keyframes jpxAur1 { 0%, 100% { transform: translate(-8%, -4%) scale(1); } 33% { transform: translate(16%, 10%) scale(1.22); } 66% { transform: translate(4%, -13%) scale(0.94); } }
+@keyframes jpxAur2 { 0%, 100% { transform: translate(8%, 6%) scale(1.1); } 40% { transform: translate(-15%, 12%) scale(0.88); } 72% { transform: translate(-3%, -11%) scale(1.28); } }
+@keyframes jpxAur3 { 0%, 100% { transform: translate(-6%, 9%) scale(0.95); } 50% { transform: translate(13%, -9%) scale(1.18); } }
+
+.jpx-loader-vignette {
+    position: absolute; inset: 0; z-index: 2;
+    background: radial-gradient(ellipse 62% 62% at 50% 48%, transparent 34%, rgba(5, 5, 9, 0.5) 72%, rgba(5, 5, 9, 0.92) 100%);
+}
+
+.jpx-loader-mark {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 3;
+    width: min(38vw, 400px); height: min(38vw, 400px);
+    background: url(../../assets/img/umbry-logo.png) center/contain no-repeat;
+    animation: jpxMarkPulse 3s ease-in-out infinite;
+}
+
+@keyframes jpxMarkPulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 4px 22px rgba(150, 80, 255, 0.35)) brightness(0.92); }
+    50% { transform: translate(-50%, -50%) scale(1.1); filter: drop-shadow(0 6px 70px rgba(0, 200, 255, 0.72)) brightness(1.15); }
+}
+
+@keyframes jpxAuroraGlow {
+    0%, 100% { filter: drop-shadow(0 4px 26px rgba(150, 80, 255, 0.4)) brightness(1); }
+    50% { filter: drop-shadow(0 4px 46px rgba(0, 200, 255, 0.55)) brightness(1.05); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .jpx-loader .jpx-aurora-blob, .jpx-loader-mark { animation: none !important; }
+}
+
+.mdl-spinner {
+    position: relative;
+    width: 1.95em;
+    height: 1.95em;
+    display: none;
+}
+
+.mdlSpinnerActive {
+    display: inline-block;
+    animation: mdl-spinner__container-rotate 1568.23529412ms linear infinite;
+}
+
+@keyframes mdl-spinner__container-rotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.mdl-spinner__layer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+}
+
+.mdl-spinner__layer-1 {
+    border-color: #00a4dc;
+}
+
+.mdlSpinnerActive .mdl-spinner__layer-1 {
+    animation: mdl-spinner__fill-unfill-rotate 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both, mdl-spinner__layer-1-fade-in-out 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+}
+
+.mdl-spinner__layer-2 {
+    border-color: #00a4dc;
+}
+
+.mdlSpinnerActive .mdl-spinner__layer-2 {
+    animation: mdl-spinner__fill-unfill-rotate 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both, mdl-spinner__layer-2-fade-in-out 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+}
+
+.mdl-spinner__layer-3 {
+    border-color: #00a4dc;
+}
+
+.mdlSpinnerActive .mdl-spinner__layer-3 {
+    animation: mdl-spinner__fill-unfill-rotate 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both, mdl-spinner__layer-3-fade-in-out 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+}
+
+.mdl-spinner__layer-4 {
+    border-color: #00a4dc;
+}
+
+.mdlSpinnerActive .mdl-spinner__layer-4 {
+    animation: mdl-spinner__fill-unfill-rotate 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both, mdl-spinner__layer-4-fade-in-out 5332ms cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+}
+
+@keyframes mdl-spinner__fill-unfill-rotate {
+    12.5% {
+        transform: rotate(135deg);
+    }
+
+    25% {
+        transform: rotate(270deg);
+    }
+
+    37.5% {
+        transform: rotate(405deg);
+    }
+
+    50% {
+        transform: rotate(540deg);
+    }
+
+    62.5% {
+        transform: rotate(675deg);
+    }
+
+    75% {
+        transform: rotate(810deg);
+    }
+
+    87.5% {
+        transform: rotate(945deg);
+    }
+
+    to {
+        transform: rotate(1080deg);
+    }
+}
+
+/**
+* HACK: Even though the intention is to have the current .mdl-spinner__layer-N
+* at `opacity: 1`, we set it to `opacity: 0.99` instead since this forces Chrome
+* to do proper subpixel rendering for the elements being animated. This is
+* especially visible in Chrome 39 on Ubuntu 14.04. See:
+*
+* - https://github.com/Polymer/paper-spinner/issues/9
+* - https://code.google.com/p/chromium/issues/detail?id=436255
+*/
+@keyframes mdl-spinner__layer-1-fade-in-out {
+    from {
+        opacity: 0.99;
+    }
+
+    25% {
+        opacity: 0.99;
+    }
+
+    26% {
+        opacity: 0;
+    }
+
+    89% {
+        opacity: 0;
+    }
+
+    90% {
+        opacity: 0.99;
+    }
+
+    100% {
+        opacity: 0.99;
+    }
+}
+
+@keyframes mdl-spinner__layer-2-fade-in-out {
+    from {
+        opacity: 0;
+    }
+
+    15% {
+        opacity: 0;
+    }
+
+    25% {
+        opacity: 0.99;
+    }
+
+    50% {
+        opacity: 0.99;
+    }
+
+    51% {
+        opacity: 0;
+    }
+}
+
+@keyframes mdl-spinner__layer-3-fade-in-out {
+    from {
+        opacity: 0;
+    }
+
+    40% {
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 0.99;
+    }
+
+    75% {
+        opacity: 0.99;
+    }
+
+    76% {
+        opacity: 0;
+    }
+}
+
+@keyframes mdl-spinner__layer-4-fade-in-out {
+    from {
+        opacity: 0;
+    }
+
+    65% {
+        opacity: 0;
+    }
+
+    75% {
+        opacity: 0.99;
+    }
+
+    90% {
+        opacity: 0.99;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+.mdl-spinner__circle {
+    box-sizing: border-box;
+    height: 100%;
+    border-width: 0.21em;
+    border-style: solid;
+    border-color: inherit;
+    border-bottom-color: transparent !important;
+    border-radius: 50%;
+    animation: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+.mdl-spinner__circle-clipper {
+    display: inline-block;
+    position: relative;
+    width: 50%;
+    height: 100%;
+    overflow: hidden;
+    border-color: inherit;
+}
+
+.mdl-spinner__circle-clipper .mdl-spinner__circle {
+    width: 200%;
+}
+
+.mdl-spinner__circleLeft {
+    border-right-color: transparent !important;
+    transform: rotate(129deg);
+}
+
+.mdlSpinnerActive .mdl-spinner__circleLeft {
+    animation: mdl-spinner__left-spin 1333ms cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+}
+
+.mdl-spinner__circleRight {
+    left: -100%;
+    border-left-color: transparent !important;
+    transform: rotate(-129deg);
+}
+
+.mdlSpinnerActive .mdl-spinner__circleRight {
+    animation: mdl-spinner__right-spin 1333ms cubic-bezier(0.4, 0, 0.2, 1) infinite both;
+}
+
+@keyframes mdl-spinner__left-spin {
+    from {
+        transform: rotate(130deg);
+    }
+
+    50% {
+        transform: rotate(-5deg);
+    }
+
+    to {
+        transform: rotate(130deg);
+    }
+}
+
+@keyframes mdl-spinner__right-spin {
+    from {
+        transform: rotate(-130deg);
+    }
+
+    50% {
+        transform: rotate(5deg);
+    }
+
+    to {
+        transform: rotate(-130deg);
+    }
+}
+
+.docspinner {
+    margin-top: -5vh;
+    margin-left: -5vh;
+    width: 10vh;
+    height: 10vh;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 9999999;
+    contain: layout style size;
+}
