@@ -93,6 +93,8 @@
     background: transparent; border: 1.5px solid rgba(147, 133, 245, 0.5); box-shadow: none;
 }
 .jpx-account-submit--secondary:hover:not(:disabled) { filter: none; background: rgba(147, 133, 245, 0.14); border-color: #9385F5; }
+.jpx-account-submit--ghost { margin-top: 0.55em; color: #b9b6c6; font-weight: 600; background: transparent; border: 1.5px solid rgba(255, 255, 255, 0.14); box-shadow: none; }
+.jpx-account-submit--ghost:hover:not(:disabled) { filter: none; background: rgba(255, 255, 255, 0.05); color: #ECEAF4; border-color: rgba(255, 255, 255, 0.28); }
 
 .jpx-account-hint {
     font-size: 0.86em; color: #c7c3d6; line-height: 1.5; text-align: center;

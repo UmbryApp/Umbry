@@ -1,23 +1,20 @@
 // Umbry — Home-row minimize / restore. Adds an outlined-square button to every home row header
 // (any .verticalSection with a .sectionTitle inside .homeSectionsContainer). Clicking it hides that
-// row (neighbors reflow because the element stays in place, just display:none) and drops a chip into
-// a horizontal strip that sits IN FLOW directly under the hero — so the strip pushes the content rows
-// down. Clicking a chip restores the row to its original position (it never left the DOM) and removes
-// the chip.
+// row (display:none, stays in place so neighbours reflow) and drops a POSTER THUMBCARD into a
+// collapsible DRAWER that sits IN FLOW directly under the hero.
 //
-// State is PER-SERVER: minimizing a row on Jellyfin/Emby/Plex only affects that server. We store a map
-// { "<serverId>": ["title", ...] } under the jpxPrefs key `minimizedRowsByServer`, and on each apply()
-// use only the CURRENT server's list. Active server id: Plex first (localStorage `jpx-active-plex`),
-// else the live Jellyfin/Emby apiclient (ServerConnections.currentApiClient().serverId()), else the
-// persisted `jpx-active-jf` marker. Switching servers re-fires apply() (home is torn down + rebuilt,
-// caught by the observer), which reads the NEW server's own set — so rows minimized on the previous
-// server are not hidden on the new one.
+// The drawer: a frosted-glass tab (chevron handle, centre-aligned) toggles it open/closed. Open =
+// chevron up, poster chips visible; closed = the chips slide up and are clipped behind the hero bar,
+// and the tab sits directly under the hero (chevron down). Each chip is a miniature poster of a random
+// item from the row (with a mirror reflection) and the row's name beneath it. Clicking a chip restores
+// the row. Drawer open/closed persists (jpxPrefs `minDrawerOpen`, default open).
 //
-// The home sections render with innerHTML (homesections.js) and the "Recently Added / Latest ..."
-// library rows are NESTED .verticalSection elements, so we match ALL descendant .verticalSection rows.
-// A refresh / server switch wipes our buttons, hidden classes and the strip, so we re-apply on a
-// MutationObserver (childList+subtree) plus a light interval, matching rows by a stable key derived
-// from the section title text (with a #N suffix for duplicate titles).
+// State is PER-SERVER: minimizing a row on Jellyfin/Emby/Plex only affects that server. Map
+// { "<serverId>": ["title", ...] } under jpxPrefs `minimizedRowsByServer`; each apply() uses only the
+// CURRENT server's list. Active server id: Plex first, else the live JF/Emby apiclient, else the
+// persisted jf marker. A refresh / server switch wipes our DOM (home re-renders via innerHTML), so we
+// re-apply on a MutationObserver (childList+subtree) plus a light interval, matching rows by a stable
+// key from the section title (with a #N suffix for duplicate titles).
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 
 import { getPref, setPref } from './theme/jpxPrefs';
@@ -25,16 +22,19 @@ import { getPref, setPref } from './theme/jpxPrefs';
 import './jpxRowMinimize.scss';
 
 const PREF_KEY = 'minimizedRowsByServer';
+const DRAWER_PREF = 'minDrawerOpen';
 const HIDDEN_CLASS = 'jpx-rowmin-hidden';
-const GRADIENT = 'linear-gradient(100deg,#FFC670,#FF9A4B,#C77BD8,#9385F5)';
 let inited = false;
 let store = {};          // { serverId: [titles] }
-let stripSig = null;     // last-rendered strip signature (cheap rebuild guard)
+let stripSig = null;     // last-rendered drawer signature (cheap rebuild guard)
 let scheduled = false;
+let drawerOpen = true;   // drawer open/closed (persisted)
+const posterCache = {};  // key -> poster url captured at minimize time (best-effort, session-only)
 
 function loadStore() {
     const v = getPref(PREF_KEY, {});
     store = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    drawerOpen = getPref(DRAWER_PREF, true) !== false;
 }
 
 function saveStore() {
@@ -79,7 +79,13 @@ function homeContainer() {
 function titleOf(section) {
     const t = section.querySelector('.sectionTitle');
     if (!t) return '';
-    return (t.textContent || '').replace(/\s+/g, ' ').trim();
+    // read only the title's own text, excluding our injected minimize button (its '-' glyph)
+    let txt = '';
+    t.childNodes.forEach((n) => {
+        if (n.nodeType === 1 && n.classList && n.classList.contains('jpx-rowmin-btn')) return;
+        txt += n.textContent || '';
+    });
+    return txt.replace(/\s+/g, ' ').trim();
 }
 
 // Compute stable keys for the given ordered sections. Duplicate titles get a #N suffix by
@@ -103,24 +109,40 @@ function computeKeys(sections) {
     });
 }
 
-function stackIconSvg() {
-    return '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">'
-        + '<rect x="4" y="5" width="16" height="3" rx="1.2"></rect>'
-        + '<rect x="4" y="10.5" width="16" height="3" rx="1.2"></rect>'
-        + '<rect x="4" y="16" width="16" height="3" rx="1.2"></rect>'
-        + '</svg>';
+// Pull one poster URL from an actual item in the row: prefer the emby card background-image, fall
+// back to <img> card sources. Returns a random valid url, or null (→ gradient fallback thumbcard).
+function posterFor(section) {
+    if (!section) return null;
+    const urls = [];
+    try {
+        section.querySelectorAll('.cardImageContainer').forEach((el) => {
+            let bg = '';
+            try { bg = (el.style && el.style.backgroundImage) || ''; } catch (e) { /* ignore */ }
+            if (!bg || bg === 'none') { try { bg = getComputedStyle(el).backgroundImage || ''; } catch (e) { /* ignore */ } }
+            const m = bg && bg.match(/url\(["']?(.*?)["']?\)/);
+            if (m && m[1] && m[1] !== 'none') urls.push(m[1]);
+        });
+        section.querySelectorAll('.jpx-libcard-collage img, img.cardImage, img.cardImageIcon, img.coveredImage').forEach((el) => {
+            const src = (el.getAttribute && el.getAttribute('src')) || el.src;
+            if (src) urls.push(src);
+        });
+    } catch (e) { /* ignore */ }
+    const valid = urls.filter((u) => u && u !== 'none' && /^(https?:|data:|blob:|\/)/i.test(u));
+    if (!valid.length) return null;
+    return valid[Math.floor(Math.random() * valid.length)];
 }
 
-function firstLetter(name) {
-    const c = (name || '').trim().charAt(0);
-    return c ? c.toUpperCase() : '•';
+function chevronSvg() {
+    // Up chevron by default (drawer open). CSS rotates it 180° (→ down) when the drawer is closed.
+    return '<svg class="jpx-rowmin-chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">'
+        + '<path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" '
+        + 'stroke-linecap="round" stroke-linejoin="round"></path></svg>';
 }
 
 // Inject the minimize button into a section header if not already present.
 function ensureButton(section, key) {
     const existing = section.querySelector('.jpx-rowmin-btn');
     if (existing) {
-        // keep the key fresh (duplicate ordering can shift across re-renders)
         existing.setAttribute('data-key', key);
         return;
     }
@@ -138,6 +160,9 @@ function ensureButton(section, key) {
         e.preventDefault();
         e.stopPropagation();
         const k = btn.getAttribute('data-key') || key;
+        // capture a poster now, while the row is still visible (best chance the images have loaded)
+        const poster = posterFor(section);
+        if (poster) posterCache[k] = poster;
         const list = listFor(activeServerId());
         if (list.indexOf(k) === -1) {
             list.push(k);
@@ -147,8 +172,6 @@ function ensureButton(section, key) {
     });
 
     // Place the button next to the title but never INSIDE a title link (would hijack navigation).
-    // Library rows wrap the <h2> in an <a is="emby-linkbutton" class="...sectionTitleTextButton">
-    // inside a .sectionTitleContainer — drop the button after that anchor, in the container.
     const anchor = title.closest('a');
     const container = title.closest('.sectionTitleContainer');
     if (anchor && anchor.parentNode) {
@@ -156,65 +179,66 @@ function ensureButton(section, key) {
     } else if (container) {
         container.appendChild(btn);
     } else {
-        // bare <h2 class=sectionTitle> — inline the button right after the text
         title.appendChild(btn);
     }
 }
 
-// Paint each chip with its own slice of one continuous gradient that spans the whole chip row:
-// every chip carries the same gradient sized to the strip's total width, shifted left by the chip's
-// own offset — so the pieces line up into one gradient (chip 1 = gold end ... last chip = purple end).
-function paintGradient(inner) {
-    const chips = inner.querySelectorAll('.jpx-rowmin-chip');
-    if (!chips.length) return;
-    const totalW = Math.max(1, Math.round(inner.getBoundingClientRect().width));
-    chips.forEach((chip) => {
-        const left = chip.offsetLeft; // relative to the position:relative inner wrapper
-        chip.style.backgroundImage = GRADIENT;
-        chip.style.backgroundRepeat = 'no-repeat';
-        chip.style.backgroundSize = totalW + 'px 100%';
-        chip.style.backgroundPosition = (-left) + 'px 0';
-    });
+// Set the drawer clip height to match content when open, or 0 when closed (drives the slide).
+function setDrawerHeight(drawer) {
+    const clip = drawer.querySelector('.jpx-rowmin-drawer-clip');
+    const content = drawer.querySelector('.jpx-rowmin-drawer-content');
+    if (!clip || !content) return;
+    clip.style.maxHeight = drawerOpen ? (content.scrollHeight + 4) + 'px' : '0px';
 }
 
-// Build / update the in-flow strip of chips directly under the hero so it pushes the rows down.
-function renderStrip(entries, home) {
-    const sig = entries.map((e) => e.key).join('|');
-    let strip = document.getElementById('jpx-rowmin-strip');
+// Build / update the collapsible drawer of poster chips, in flow right under the hero.
+function renderDrawer(entries, home) {
+    const sig = entries.map((e) => e.key + ':' + (e.poster ? 'p' : 'g')).join('|') + '|' + (drawerOpen ? 'o' : 'c');
+    let drawer = document.getElementById('jpx-rowmin-strip');
 
     if (!entries.length || !home) {
-        if (strip) strip.remove();
+        if (drawer) drawer.remove();
         stripSig = '';
         return;
     }
 
-    // (Re)create the strip if it's missing, detached, or no longer inside the current home (a home
-    // rebuild via innerHTML destroys it).
-    if (!strip || !strip.isConnected || strip.parentNode !== home) {
-        if (strip && strip.parentNode) strip.remove();
-        strip = document.createElement('div');
-        strip.id = 'jpx-rowmin-strip';
-        strip.className = 'jpx-rowmin-strip';
-        strip.innerHTML = '<div class="jpx-rowmin-strip-inner"></div>';
-        // In-flow, right after the hero, so the content rows shift down.
+    // (Re)create if missing/detached/rebuilt (home innerHTML wipe destroys it).
+    if (!drawer || !drawer.isConnected || drawer.parentNode !== home) {
+        if (drawer && drawer.parentNode) drawer.remove();
+        drawer = document.createElement('div');
+        drawer.id = 'jpx-rowmin-strip';
+        drawer.className = 'jpx-rowmin-drawer';
+        drawer.innerHTML =
+            '<div class="jpx-rowmin-drawer-clip"><div class="jpx-rowmin-drawer-content"></div></div>'
+            + '<button type="button" class="jpx-rowmin-tab" aria-label="Show or hide minimized rows">'
+            + chevronSvg() + '</button>';
         const hero = home.querySelector('.jpx-hero');
         if (hero && hero.parentNode === home) {
-            home.insertBefore(strip, hero.nextSibling);
+            home.insertBefore(drawer, hero.nextSibling);
         } else {
-            home.insertBefore(strip, home.firstChild);
+            home.insertBefore(drawer, home.firstChild);
         }
-        stripSig = null; // force a chip rebuild below
+        drawer.querySelector('.jpx-rowmin-tab').addEventListener('click', (ev) => {
+            ev.preventDefault();
+            ev.stopPropagation();
+            drawerOpen = !drawerOpen;
+            setPref(DRAWER_PREF, drawerOpen);
+            drawer.setAttribute('data-open', drawerOpen ? 'true' : 'false');
+            setDrawerHeight(drawer);
+        });
+        stripSig = null;
     }
 
+    drawer.setAttribute('data-open', drawerOpen ? 'true' : 'false');
+
     if (sig === stripSig) {
-        // Content unchanged — the strip width can still shift on resize, so re-run the paint cheaply.
-        paintGradient(strip.querySelector('.jpx-rowmin-strip-inner'));
+        setDrawerHeight(drawer); // keep height right across resizes
         return;
     }
     stripSig = sig;
 
-    const inner = strip.querySelector('.jpx-rowmin-strip-inner');
-    inner.innerHTML = '';
+    const content = drawer.querySelector('.jpx-rowmin-drawer-content');
+    content.innerHTML = '';
     for (const e of entries) {
         const chip = document.createElement('button');
         chip.type = 'button';
@@ -222,9 +246,17 @@ function renderStrip(entries, home) {
         chip.title = e.name;
         chip.setAttribute('aria-label', 'Restore row: ' + e.name);
         chip.setAttribute('data-key', e.key);
-        chip.innerHTML = stackIconSvg()
-            + '<span class="jpx-rowmin-chip-letter">' + esc(firstLetter(e.name)) + '</span>'
-            + '<span class="jpx-rowmin-chip-label">' + esc(e.name) + '</span>';
+
+        const thumb = document.createElement('span');
+        thumb.className = 'jpx-rowmin-thumb' + (e.poster ? '' : ' jpx-rowmin-thumb--fallback');
+        if (e.poster) thumb.style.backgroundImage = 'url("' + String(e.poster).replace(/"/g, '%22') + '")';
+
+        const label = document.createElement('span');
+        label.className = 'jpx-rowmin-chip-label';
+        label.textContent = e.name;
+
+        chip.appendChild(thumb);
+        chip.appendChild(label);
         chip.addEventListener('click', (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
@@ -237,22 +269,20 @@ function renderStrip(entries, home) {
                 if (!list.length) delete store[sid];
                 saveStore();
             }
+            delete posterCache[k];
             apply();
         });
-        inner.appendChild(chip);
+        content.appendChild(chip);
     }
-    // Lay the continuous gradient across the freshly-built chips (forces one reflow — fine).
-    paintGradient(inner);
+    setDrawerHeight(drawer);
+    (window.requestAnimationFrame || window.setTimeout)(() => { try { setDrawerHeight(drawer); } catch (e) { /* ignore */ } });
 }
 
-// The core reconcile: inject buttons, hide/show rows, sync the strip. Cheap + idempotent.
-// Uses ONLY the current server's minimized set (per-server state) and re-hides matching rows every
-// run — which is what keeps each server independent across switches.
+// The core reconcile: inject buttons, hide/show rows, sync the drawer. Cheap + idempotent.
 function apply() {
     const home = homeContainer();
     if (!home) {
-        // Not on the home screen — nothing to inject; drop the strip so nothing lingers.
-        renderStrip([], null);
+        renderDrawer([], null);
         return;
     }
     const list = store[activeServerId()] || [];
@@ -266,13 +296,13 @@ function apply() {
         ensureButton(section, key);
         if (list.indexOf(key) !== -1) {
             section.classList.add(HIDDEN_CLASS);
-            entries.push({ key: key, name: titleOf(section) });
+            entries.push({ key: key, name: titleOf(section), poster: posterCache[key] || posterFor(section) });
         } else {
             section.classList.remove(HIDDEN_CLASS);
         }
     });
 
-    renderStrip(entries, home);
+    renderDrawer(entries, home);
 }
 
 function schedule() {
@@ -289,15 +319,11 @@ export function initJpxRowMinimize() {
     inited = true;
     loadStore();
 
-    // Re-apply on any DOM churn. childList+subtree catches the home being torn down and rebuilt on a
-    // data refresh or server switch, AND the moment each library-row .verticalSection frag is appended
-    // — so the newly-active server's own minimized set is applied to its fresh rows.
     try {
         const mo = new MutationObserver(() => schedule());
         mo.observe(document.body, { childList: true, subtree: true });
-    } catch (e) { /* no MutationObserver — interval below still covers it */ }
+    } catch (e) { /* interval below still covers it */ }
 
-    // Fallback safety net + keeps the gradient/strip correct across resizes and route changes.
     setInterval(schedule, 1500);
     window.addEventListener('resize', schedule);
     window.addEventListener('hashchange', schedule);

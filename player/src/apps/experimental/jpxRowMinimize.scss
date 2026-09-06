@@ -1,12 +1,12 @@
 // Umbry — Home-row minimize / restore styles.
 // Minimize button = an outlined accent square in the row header. Minimized rows collapse into a
-// horizontal, centered strip of gradient chips that sits in flow directly under the hero.
+// COLLAPSIBLE DRAWER of poster thumbcards (with mirror reflections + the row name) that sits in flow
+// directly under the hero. A frosted chevron tab toggles the drawer open/closed; closed, the chips
+// slide up and are clipped behind the hero bar and the tab hugs the hero.
 
 $jpx-accent: var(--jpx-t-accent, #9385F5);
-$jpx-on-accent: var(--jpx-t-on-accent, #160E2A);
 
 // ---- minimize button in the row header ----
-// Outlined square: transparent fill, accent border + glyph, subtle accent tint on hover.
 .jpx-rowmin-btn {
     display: inline-flex;
     align-items: center;
@@ -36,7 +36,7 @@ $jpx-on-accent: var(--jpx-t-on-accent, #160E2A);
     &:hover,
     &:focus-visible {
         opacity: 1;
-        background: rgba(147, 133, 245, 0.18); // subtle accent-tinted fill
+        background: rgba(147, 133, 245, 0.18);
         transform: translateY(-1px);
         outline: none;
     }
@@ -49,91 +49,141 @@ $jpx-on-accent: var(--jpx-t-on-accent, #160E2A);
     display: none !important;
 }
 
-// ---- in-flow strip under the hero (pushes the content rows down) ----
-.jpx-rowmin-strip {
+// ---- collapsible drawer (in flow, right under the hero) ----
+.jpx-rowmin-drawer {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
     width: 100%;
-    padding: 0.35rem 1rem 0.75rem;
     box-sizing: border-box;
+    margin-top: -1.4em; // cancel the hero's 1.4em bottom margin so the tab sits flush/attached to it
 }
 
-.jpx-rowmin-strip-inner {
-    position: relative;      // chip.offsetLeft is measured against this for the gradient slices
-    display: inline-flex;
-    flex-wrap: nowrap;
-    gap: 0.5rem;
-    max-width: 100%;
+// The clip collapses to 0 height when closed; JS sets the open px value. overflow:hidden is what
+// clips the chips "behind" the hero as they slide up.
+.jpx-rowmin-drawer-clip {
+    width: 100%;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.32s ease;
 }
 
-// ---- chips ----
-// The continuous app gradient is painted per-chip via inline background-* by the JS (each chip shows
-// its own slice). This rule keeps the frosted/rounded shape and a fallback fill until JS paints.
+.jpx-rowmin-drawer-content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem 1rem;
+    padding: 0.6rem 1rem 0.4rem;
+    box-sizing: border-box;
+    transform: translateY(0);
+    opacity: 1;
+    transition: transform 0.32s ease, opacity 0.28s ease;
+}
+
+// closed: chips slide up (clipped behind the hero) and fade
+.jpx-rowmin-drawer[data-open="false"] .jpx-rowmin-drawer-content {
+    transform: translateY(-100%);
+    opacity: 0;
+}
+
+// ---- poster thumbcard chips ----
 .jpx-rowmin-chip {
     pointer-events: auto;
-    position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
     flex: 0 0 auto;
     padding: 0;
     border: 0;
-    border-radius: 12px;
-    background: $jpx-accent; // fallback before the JS gradient paint lands
-    color: $jpx-on-accent;
+    background: transparent;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    color: #fff;
+    width: 92px;
 
-    svg { fill: currentColor; }
-
-    // The first-letter badge sits over the stack glyph corner.
-    .jpx-rowmin-chip-letter {
-        position: absolute;
-        right: 3px;
-        bottom: 2px;
-        font-size: 11px;
-        font-weight: 800;
-        line-height: 1;
-        color: $jpx-on-accent;
-        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.35);
+    .jpx-rowmin-thumb {
+        width: 84px;
+        height: 48px;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.05);
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+        margin-bottom: 22px; // reserve room for the reflection rendered below
+        -webkit-box-reflect: below 2px linear-gradient(transparent 52%, rgba(255, 255, 255, 0.22));
+        transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
     }
 
-    // Full name flyout on hover (below the chip, since the strip is horizontal).
+    .jpx-rowmin-thumb--fallback {
+        background-image: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5);
+    }
+
     .jpx-rowmin-chip-label {
-        position: absolute;
-        top: calc(100% + 8px);
-        left: 50%;
-        transform: translateX(-50%) scale(0.96);
-        transform-origin: top center;
-        white-space: nowrap;
-        padding: 4px 10px;
-        border-radius: 8px;
-        background: rgba(20, 20, 28, 0.85);
-        backdrop-filter: blur(14px);
-        -webkit-backdrop-filter: blur(14px);
-        border: 1px solid $jpx-accent;
-        color: #fff;
-        font-size: 12px;
+        max-width: 92px;
+        font-size: 11px;
+        line-height: 1.15;
         font-weight: 600;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.12s ease, transform 0.12s ease;
-        z-index: 2;
+        text-align: center;
+        color: #d7d3e6;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
     }
 
     &:hover,
     &:focus-visible {
-        transform: translateY(-2px);
-        filter: brightness(1.08);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
         outline: none;
 
-        .jpx-rowmin-chip-label {
-            opacity: 1;
-            transform: translateX(-50%) scale(1);
+        .jpx-rowmin-thumb {
+            transform: translateY(-3px);
+            filter: brightness(1.08);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6);
         }
+
+        .jpx-rowmin-chip-label { color: #fff; }
     }
+}
+
+// ---- frosted chevron tab (the drawer handle) ----
+.jpx-rowmin-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 62px;
+    height: 26px;
+    margin-top: -1px; // hug the clip bottom / the hero when closed
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    border-top: 0;
+    border-radius: 0 0 13px 13px;
+    background: rgba(28, 24, 44, 0.80);
+    backdrop-filter: blur(26px) saturate(1.7);
+    -webkit-backdrop-filter: blur(26px) saturate(1.7);
+    color: #e7e2f5;
+    cursor: pointer;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.10);
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+    .jpx-rowmin-chev { transition: transform 0.32s ease; }
+
+    &:hover,
+    &:focus-visible {
+        outline: none;
+        color: #fff;
+        background: rgba(147, 133, 245, 0.28);
+        border-color: rgba(147, 133, 245, 0.6);
+    }
+}
+
+.jpx-rowmin-drawer[data-open="false"] .jpx-rowmin-chev {
+    transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .jpx-rowmin-drawer-clip,
+    .jpx-rowmin-drawer-content,
+    .jpx-rowmin-chev { transition: none; }
 }

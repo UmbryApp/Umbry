@@ -90,6 +90,7 @@ import { promptLibrarySelect } from './theme/jpxLibrarySelect';
 import { promptHomeLibraries } from './theme/jpxHomeLibrariesPrompt';
 import { promptGenreSelect } from './theme/jpxGenreSelect';
 import { promptRecoveryCode } from './theme/jpxRecoveryCodePrompt';
+import { promptSeerr } from './theme/jpxSeerrPrompt';
 import { promptLibrarySelection } from './theme/jpxLibrarySelection';
 import { promptPlayerButtons } from './theme/jpxPlayerButtonsPrompt';
 import { hasPin, clearPin, enterKidsMode, exitKidsMode, kidsModeActive, purgeQueryCaches } from './theme/jpxParental';
@@ -233,6 +234,15 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
                 onClose();
                 try { window.location.hash = '#/home'; } catch { /* ignore */ }
                 void purgeQueryCaches().finally(() => { try { window.location.reload(); } catch { /* ignore */ } });
+                break;
+            }
+            case 'seerr_config':
+                onClose();
+                setTimeout(() => { void promptSeerr(); }, 200);
+                break;
+            case 'seerr_open': {
+                const { openSeerr, seerrConfigured } = await import('./theme/jpxSeerr');
+                if (seerrConfigured()) { openSeerr(); onClose(); } else { onClose(); setTimeout(() => { void promptSeerr(); }, 200); }
                 break;
             }
             default: break;

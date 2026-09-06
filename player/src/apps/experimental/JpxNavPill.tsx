@@ -14,6 +14,8 @@ import { useUserViews } from 'hooks/api/useUserViews';
 import JpxSettingsDrawer from './JpxSettingsDrawer';
 import { getPref, setPref, subscribePrefs } from './theme/jpxPrefs';
 import { promptPin } from './theme/jpxPinPrompt';
+import { openSeerr, seerrConfigured } from './theme/jpxSeerr';
+import { promptSeerr } from './theme/jpxSeerrPrompt';
 import { hasPin, enterKidsMode, exitKidsMode, kidsModeActive, purgeQueryCaches } from './theme/jpxParental';
 import { getPlexServers } from './theme/jpxPlex';
 import { makePlexApiClient } from './theme/jpxPlexClient';
@@ -267,6 +269,7 @@ const JpxNavPill = () => {
     const items: NavItem[] = [
         { icon: 'home', label: 'Home', onClick: () => go('/home'), active: isHome },
         { icon: 'search', label: 'Search', onClick: () => go('/search'), active: location.pathname === '/search' },
+        { icon: 'movie_filter', label: 'Requests', onClick: () => { if (seerrConfigured()) { openSeerr(); } else { void promptSeerr(); } }, active: false },
         { icon: 'live_tv', label: 'Live TV', onClick: () => go('/jpxlivetv'), active: location.pathname === '/jpxlivetv' },
         ...(getPref('pref_show_shuffle_button', true) ? [{ icon: 'shuffle', label: 'Random', onClick: () => playRandom() }] : []),
         ...(getPref('pref_show_genres_button', true) ? [{ icon: 'theater_comedy', label: 'Genres', onClick: () => go('/jpxgenres'), active: location.pathname === '/jpxgenres' }] : []),

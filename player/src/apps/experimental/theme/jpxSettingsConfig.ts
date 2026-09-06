@@ -393,7 +393,8 @@ export const JPX_PANELS: Record<string, JpxPanel> = {
         sections: [{ header: 'General', rows: [
             { type: 'toggle', icon: 'star', title: 'Additional Ratings', subtitle: 'Show TMDB ratings on detail pages', key: 'enableAdditionalRatings', default: false },
             { type: 'toggle', icon: 'label', title: 'Rating Labels', key: 'showRatingLabels', default: true },
-            { type: 'route', icon: 'movie_filter', title: 'Request Plugins', subtitle: 'Jellyseerr and other request integrations (opens server Plugins)', route: 'dashboard/plugins', admin: true }
+            { type: 'action', icon: 'live_tv', title: 'Requests (Jellyseerr / Overseerr)', subtitle: 'Link your request server — enter its address and test the connection', action: 'seerr_config' },
+            { type: 'action', icon: 'open_in_new', title: 'Open Requests', subtitle: 'Browse and request titles in your Seerr, inside Umbry', action: 'seerr_open' }
         ] }]
     },
 
