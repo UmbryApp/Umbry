@@ -1,23 +1,12 @@
-# npm
-dist
-web
-node_modules
-
-# test coverage
-coverage
-
-# config
-config.json
-
-# ide
-.idea
-.vs
-
-# vim
-*.sw?
-
-# direnv
-.direnv/
-
-# environment related
-.envrc
+node_modules/
+dist/
+capdist/
+build/
+coverage/
+.DS_Store
+*.log
+*.bak
+*bak
+*.tsbuildinfo
+.env
+.env.*

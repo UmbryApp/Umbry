@@ -2,9 +2,9 @@
 .jpx-hero {
     position: relative;
     width: 100%;
-    height: 70vh;
+    height: 82vh;
     min-height: 440px;
-    max-height: 860px;
+    max-height: 1000px;
     /* Sit BELOW the floating nav so the nav has its own line above the hero (Moonfin-style),
        instead of overlaying the poster. */
     margin: 3.7rem 0 1.4em;
@@ -213,7 +213,7 @@
 /* Tighter hero on small screens */
 @media (max-width: 800px) {
     .jpx-hero {
-        height: 60vh;
+        height: 72vh;
         min-height: 380px;
     }
 
@@ -236,8 +236,8 @@
     border: 0;
     pointer-events: none;
     z-index: 0;
-    transform: scale(1.14);
-    transform-origin: center;
+    transform: scale(1.22);
+    transform-origin: center top;
     opacity: 0;
 }
 @keyframes jpxHeroTrailerFade { to { opacity: 1; } }
@@ -245,7 +245,7 @@
    controls/spinner never flash into view. */
 .jpx-hero-trailer.jpx-hero-trailer--playing { animation: jpxHeroTrailerFade 0.7s ease forwards; }
 
-video.jpx-hero-trailer { transform: none; object-fit: cover; }
+video.jpx-hero-trailer { transform: none; object-fit: cover; object-position: center top; }
 
 /* Trailer playing: hide the synopsis card and shrink the logo/title so only a small logo (bottom
    left) + the action buttons sit over the trailer. */

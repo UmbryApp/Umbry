@@ -1,8 +1,8 @@
 {
-  "name": "umbry",
+  "name": "jellyfin-web",
   "version": "12.0.0",
-  "description": "Umbry - one player for Jellyfin, Emby & Plex (a GPL-2.0 fork of jellyfin-web).",
-  "repository": "https://github.com/UmbryApp/Umbry",
+  "description": "Web interface for Jellyfin",
+  "repository": "https://github.com/jellyfin/jellyfin-web",
   "license": "GPL-2.0-or-later",
   "devDependencies": {
     "@babel/core": "7.29.0",
@@ -175,6 +175,5 @@
     "node": ">=24.0.0",
     "npm": ">=11.0.0",
     "yarn": "YARN NO LONGER USED - use npm instead."
-  },
-  "homepage": "https://umbry.org"
+  }
 }

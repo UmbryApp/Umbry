@@ -234,6 +234,37 @@ export class JpxNativeVideoPlayer {
         return 'Umbry';
     }
 
+    // Artist line for the music lock-screen card.
+    _audioArtist(options) {
+        const item = (options && options.item) || {};
+        if (Array.isArray(item.Artists) && item.Artists.length) return String(item.Artists[0]);
+        if (item.AlbumArtist) return String(item.AlbumArtist);
+        if (Array.isArray(item.ArtistItems) && item.ArtistItems.length) return String(item.ArtistItems[0].Name || '');
+        if (item.Album) return String(item.Album);
+        return '';
+    }
+
+    // Square album cover for the music media card (Primary image of the album/track).
+    _audioArtwork(options) {
+        const item = (options && options.item) || {};
+        try {
+            if (typeof item.__posterUrl === 'string' && /^https?:/i.test(item.__posterUrl)) return item.__posterUrl;
+            const prim = item.ImageTags && item.ImageTags.Primary;
+            if (typeof prim === 'string' && /^https?:/i.test(prim)) return prim; // Plex full-URL tag
+            const sc = ServerConnections;
+            const api = item.ServerId ? sc.getApiClient(item.ServerId) : sc.currentApiClient();
+            if (api) {
+                if (item.AlbumId && item.AlbumPrimaryImageTag) {
+                    return api.getUrl('Items/' + item.AlbumId + '/Images/Primary', { tag: item.AlbumPrimaryImageTag, api_key: api.accessToken(), fillWidth: 512 });
+                }
+                if (item.Id && prim) {
+                    return api.getUrl('Items/' + item.Id + '/Images/Primary', { tag: prim, api_key: api.accessToken(), fillWidth: 512 });
+                }
+            }
+        } catch (e) { /* no artwork */ }
+        return this._artwork(options);
+    }
+
     async play(options) {
         const nv = nativeVideo();
         if (!nv) { throw new Error('NativeVideo plugin unavailable'); }
@@ -265,16 +296,31 @@ export class JpxNativeVideoPlayer {
         // Don't block playbackManager's start-report indefinitely if the native 'playing' event is missed.
         const timeout = new Promise((resolve) => setTimeout(resolve, 1500));
 
+        // Music routes to the service-owned native audio player (background playback + lock-screen
+        // notification); video opens the full-screen native player Activity.
+        const isAudio = String((options.item && options.item.MediaType) || options.mediaType || '').toLowerCase() === 'audio';
+        this._isAudio = isAudio;
         try {
-            nv.play({
-                url: options.url,
-                startPositionMs: startMs,
-                title: title,
-                subtitle: this._subtitle(options),
-                artworkUrl: this._artwork(options),
-                subtitles: subtitles,
-                queryToken: queryToken || ''
-            });
+            if (isAudio) {
+                nv.playAudio({
+                    url: options.url,
+                    startPositionMs: startMs,
+                    title: title || 'Umbry',
+                    artist: this._audioArtist(options),
+                    artworkUrl: this._audioArtwork(options),
+                    queryToken: queryToken || ''
+                });
+            } else {
+                nv.play({
+                    url: options.url,
+                    startPositionMs: startMs,
+                    title: title,
+                    subtitle: this._subtitle(options),
+                    artworkUrl: this._artwork(options),
+                    subtitles: subtitles,
+                    queryToken: queryToken || ''
+                });
+            }
         } catch (e) {
             this._finishStopped();
             throw e;
@@ -350,7 +396,8 @@ export class JpxNativeVideoPlayer {
     currentSrc() { return this._url; }
 
     canPlayMediaType(mediaType) {
-        return hasNative() && String(mediaType || '').toLowerCase() === 'video';
+        const t = String(mediaType || '').toLowerCase();
+        return hasNative() && (t === 'video' || t === 'audio');
     }
 
     supportsPlayMethod() { return true; }
