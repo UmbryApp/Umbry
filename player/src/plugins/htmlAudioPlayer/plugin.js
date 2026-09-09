@@ -133,11 +133,12 @@ class HtmlAudioPlayer {
                     if (!self.gainNode) return;
                 }
 
+                const jpxVg = self._jpxMuted ? 0 : (self._jpxVolGain != null ? self._jpxVolGain : 1);
                 if (normalizationGain) {
                     self.normalizationGain = Math.pow(10, normalizationGain / 20);
-                    self.gainNode.gain.value = self.normalizationGain;
+                    self.gainNode.gain.value = self.normalizationGain * jpxVg;
                 } else {
-                    self.gainNode.gain.value = 1;
+                    self.gainNode.gain.value = jpxVg;
                     self.normalizationGain = 1;
                 }
                 if (browser.safari) {
@@ -294,6 +295,7 @@ class HtmlAudioPlayer {
                 const AudioContext = window.AudioContext || window.webkitAudioContext; /* eslint-disable-line compat/compat */
 
                 const audioCtx = new AudioContext();
+                self._jpxAudioCtx = audioCtx;
                 const source = audioCtx.createMediaElementSource(elem);
 
                 const gainNode = audioCtx.createGain();
@@ -306,6 +308,7 @@ class HtmlAudioPlayer {
                 console.error('Web Audio API is not supported in this browser', e);
             }
         }
+        self._jpxAddGain = addGainElement;
 
         function onEnded() {
             htmlMediaHelper.onEndedInternal(self, this, onError);
@@ -520,6 +523,10 @@ class HtmlAudioPlayer {
     setVolume(val) {
         const mediaElement = this._mediaElement;
         if (mediaElement) {
+            // Set the element volume directly. Umbry's custom UI calls this player method directly
+            // (bypassing playbackManager's mobile physical-volume gate). Web Audio gain was tried but
+            // silences cross-origin media (no crossOrigin on the element -> tainted graph), so it's
+            // out; on Android/Chromium elem.volume is honored (the read-only rule is iOS-specific).
             mediaElement.volume = Math.pow(val / 100, 3);
         }
     }
@@ -527,6 +534,9 @@ class HtmlAudioPlayer {
     getVolume() {
         const mediaElement = this._mediaElement;
         if (mediaElement) {
+            if (appHost.supports(AppFeature.PhysicalVolumeControl) && this._jpxVolGain != null) {
+                return Math.min(Math.round(Math.pow(this._jpxVolGain, 1 / 3) * 100), 100);
+            }
             return Math.min(Math.round(Math.pow(mediaElement.volume, 1 / 3) * 100), 100);
         }
     }
@@ -543,6 +553,13 @@ class HtmlAudioPlayer {
         const mediaElement = this._mediaElement;
         if (mediaElement) {
             mediaElement.muted = mute;
+            try {
+                if (appHost.supports(AppFeature.PhysicalVolumeControl) && this.gainNode) {
+                    this._jpxMuted = mute;
+                    const vg = this._jpxVolGain != null ? this._jpxVolGain : 1;
+                    this.gainNode.gain.value = mute ? 0 : vg * (this.normalizationGain != null ? this.normalizationGain : 1);
+                }
+            } catch (e) { /* ignore */ }
         }
     }
 

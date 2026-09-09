@@ -204,10 +204,26 @@ export function loadJpxHero(elem, apiClient, user) {
 
         show(0);
 
+        // Umbry mobile: swipe left/right across the hero to change the featured slide.
+        let lastSwipe = 0;
+        if (featured.length > 1) {
+            let sx = 0, sy = 0, st = 0;
+            elem.addEventListener('touchstart', (e) => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
+            elem.addEventListener('touchend', (e) => {
+                const t = e.changedTouches[0]; const dx = t.clientX - sx; const dy = t.clientY - sy;
+                if (Date.now() - st < 600 && Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    lastSwipe = Date.now();
+                    if (dx < 0) show((current + 1) % featured.length);
+                    else show((current - 1 + featured.length) % featured.length);
+                }
+            }, { passive: true });
+        }
+
         // Umbry: the whole hero (backdrop + frosted card) is clickable -> open the featured
         // item's detail page. jpx-hero clickable. Play / More Info / dots keep their own actions.
         elem.addEventListener('click', (e) => {
             if (e.target.closest('.jpx-hero-actions, .jpx-hero-dots, button')) return;
+            if (Date.now() - lastSwipe < 400) return; // a swipe just changed slides — don't also navigate
             const featuredItem = featured[current];
             if (featuredItem) appRouter.showItem(featuredItem);
         });

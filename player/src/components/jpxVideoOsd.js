@@ -9,6 +9,7 @@
 // Every action delegates to playbackManager or a stock button, so behavior is unchanged.
 
 import { playbackManager } from 'components/playback/playbackmanager';
+import { appRouter } from 'components/router/appRouter';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import Events from 'utils/events';
 import './jpxVideoOsd.scss';
@@ -55,7 +56,12 @@ export function initJpxVideoOsd(view, getPlayer) {
             '<button type="button" class="jpx-osd-back"><span class="material-icons" aria-hidden="true">arrow_back</span></button>'
             + '<img class="jpx-osd-logo hide" alt="" /><div class="jpx-osd-title"></div>');
         view.appendChild(top);
-        top.querySelector('.jpx-osd-back').addEventListener('click', () => { try { history.back(); } catch (e) { /* ignore */ } });
+        top.querySelector('.jpx-osd-back').addEventListener('click', () => { try { playbackManager.stop(getPlayer()); } catch (e) { try { appRouter.back(); } catch (e2) { try { history.back(); } catch (e3) { /* ignore */ } } } });
+        // The view's tap-to-toggle is bound on POINTERDOWN at the view root and only skips
+        // .videoOsdBottom; our top bar sits at the view root too, so a tap here fired that handler
+        // (hiding the OSD -> pointer-events:none) BEFORE the button's click landed = dead back arrow.
+        // Stop the tap from reaching the view (same fix .jpx-osd-center uses below).
+        ['pointerdown', 'click'].forEach((ev) => top.addEventListener(ev, (e) => e.stopPropagation()));
 
         // ---- center transport: reparent stock buttons (their listeners come along) ----
         const center = el('div', 'jpx-osd-center');
@@ -135,7 +141,7 @@ export function initJpxVideoOsd(view, getPlayer) {
         // ---- bottom bar: volume on the left, a single "More" dropdown on the right ----
         const bar = el('div', 'jpx-osd-bar');
         osdControls.appendChild(bar);
-        bar.addEventListener('click', (e) => e.stopPropagation());
+        ['pointerdown', 'touchstart', 'mousedown', 'click'].forEach((ev) => bar.addEventListener(ev, (e) => e.stopPropagation()));
         const player = () => getPlayer();
         const item = () => { try { return playbackManager.currentItem(player()); } catch (e) { return null; } };
         const mediaSource = () => { try { return playbackManager.currentMediaSource(player()); } catch (e) { return null; } };
@@ -151,8 +157,9 @@ export function initJpxVideoOsd(view, getPlayer) {
         const volIconFor = (v, muted) => (muted || v <= 0) ? 'volume_off' : (v < 45 ? 'volume_down' : 'volume_up');
         const syncVol = () => {
             try {
-                const muted = playbackManager.isMuted(player());
-                const v = Math.round(playbackManager.getVolume(player()) || 0);
+                const p = player();
+                const muted = playbackManager.isMuted(p);
+                const v = Math.round(((p && typeof p.getVolume === 'function') ? p.getVolume() : playbackManager.getVolume(p)) || 0);
                 if (document.activeElement !== volSlider) volSlider.value = muted ? 0 : v;
                 volSlider.style.setProperty('--v', (muted ? 0 : v) + '%');
                 volIcon.textContent = volIconFor(v, muted);
@@ -160,7 +167,7 @@ export function initJpxVideoOsd(view, getPlayer) {
         };
         volSlider.addEventListener('input', () => {
             const v = parseInt(volSlider.value, 10) || 0;
-            try { if (playbackManager.isMuted(player()) && v > 0) playbackManager.setMute(false, player()); playbackManager.setVolume(v, player()); } catch (e) { /* ignore */ }
+            try { const p = player(); if (p) { if (playbackManager.isMuted(p) && v > 0) playbackManager.setMute(false, p); if (typeof p.setVolume === 'function') p.setVolume(v); else playbackManager.setVolume(v, p); } } catch (e) { /* ignore */ }
             volSlider.style.setProperty('--v', v + '%');
             volIcon.textContent = volIconFor(v, false);
         });
@@ -175,8 +182,8 @@ export function initJpxVideoOsd(view, getPlayer) {
         moreDrop.appendChild(moreList);
         moreWrap.appendChild(moreBtn); moreWrap.appendChild(moreDrop);
         bar.appendChild(moreWrap);
-        const closeMore = () => moreWrap.classList.remove('open');
-        moreBtn.addEventListener('click', (e) => { e.stopPropagation(); try { applyOsdButtonPrefs(moreList); } catch (err) { /* ignore */ } moreWrap.classList.toggle('open'); });
+        const closeMore = () => { moreWrap.classList.remove('open'); view.classList.remove('jpx-osd-menuopen'); };
+        moreBtn.addEventListener('click', (e) => { e.stopPropagation(); try { applyOsdButtonPrefs(moreList); } catch (err) { /* ignore */ } const open = moreWrap.classList.toggle('open'); view.classList.toggle('jpx-osd-menuopen', open); });
         document.addEventListener('click', (e) => { if (!moreWrap.contains(e.target)) closeMore(); });
 
         const mkBtn = (icon, title, onClick, cls) => {
@@ -378,7 +385,7 @@ export function initJpxVideoOsd(view, getPlayer) {
             }));
         });
 
-        // ---------- Rotation lock (phones) / Fullscreen (desktops) ----------
+        // ---------- Rotation lock (phones only) ----------
         if (screen.orientation && screen.orientation.lock && 'ontouchstart' in window) {
             let locked = false;
             const rotBtn = mkBtn('screen_rotation', 'Rotation lock', () => {
@@ -391,9 +398,22 @@ export function initJpxVideoOsd(view, getPlayer) {
                 }
                 rotBtn.classList.toggle('jpx-osd-btn-on', locked);
             });
-        } else {
-            mkBtn('fullscreen', 'Fullscreen', () => { const b = view.querySelector('.btnFullscreen'); if (b) b.click(); });
         }
+        // ---------- Fullscreen (ALL platforms) — phones need it too: in the Android/Capacitor app the
+        //            WebView otherwise plays the video letterboxed with the system status/nav bars up. ----------
+        mkBtn('fullscreen', 'Fullscreen', () => {
+            // Native Android video fullscreen: hand the actual <video> to the WebView's custom-view
+            // fullscreen (FullscreenChromeClient handles onShowCustomView). Browser/desktop fall back
+            // to the stock button, then the document Fullscreen API.
+            const vid = document.querySelector('.videoPlayerContainer video') || document.querySelector('video');
+            try {
+                if (document.fullscreenElement) { document.exitFullscreen(); return; }
+                if (vid && vid.requestFullscreen) { vid.requestFullscreen(); return; }
+                if (vid && vid.webkitEnterFullscreen) { vid.webkitEnterFullscreen(); return; }
+            } catch (e) { /* fall through */ }
+            const stock = view.querySelector('.btnFullscreen'); if (stock) { stock.click(); return; }
+            const t = document.documentElement; const req = t.requestFullscreen || t.webkitRequestFullscreen; if (req) req.call(t);
+        });
 
         // ---------- Playback Information ----------
         mkBtn('info_outline', 'Playback Information', () => {

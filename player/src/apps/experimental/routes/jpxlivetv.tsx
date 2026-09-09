@@ -3,7 +3,7 @@
 // media server. Channels + streams come from umbry-fast, a self-contained local proxy (Pluto/Tubi/
 // Plex/Samsung reimplemented in Node) plus public M3U lists; EPG (now/next) from Pluto's inline timelines + Plex's XMLTV, recomputed live on
 // a timer. Played via the bundled hls.js. The channel list is windowed (only visible rows render)
-// so 2500+ channels stay smooth. No external service dependency; channel data is fetched at runtime.
+// so 2500+ channels stay smooth. No external service dependencies — channels are fetched directly.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import './jpxLiveTv.scss';

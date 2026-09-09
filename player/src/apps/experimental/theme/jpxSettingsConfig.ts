@@ -36,6 +36,7 @@ export interface JpxRow {
     body?: string;           // for prose
     admin?: boolean;
     electronOnly?: boolean;  // only show inside the Umbry desktop app (window.umbry present)
+    nativeOnly?: boolean;    // show in any packaged native app (desktop Electron OR Android/Capacitor)
 }
 
 export interface JpxSection { header?: string; rows: JpxRow[] }
@@ -404,7 +405,7 @@ export const JPX_PANELS: Record<string, JpxPanel> = {
         sections: [
             { header: 'App Info', rows: [
                 { type: 'static', icon: 'info', title: 'Version', value: 'Umbry' },
-                { type: 'action', icon: 'system_update_alt', title: 'Check for Updates', subtitle: 'See if a newer version of Umbry is available', action: 'check_updates', electronOnly: true },
+                { type: 'action', icon: 'system_update_alt', title: 'Check for Updates', subtitle: 'See if a newer version of Umbry is available', action: 'check_updates', nativeOnly: true },
                 { type: 'link', icon: 'code', title: 'Source Code', subtitle: 'Umbry is GPL-2.0 (built on Jellyfin) — download the source', url: 'https://dl.umbry.org/umbry-web-source.tar.gz' },
                 { type: 'route', icon: 'troubleshoot', title: 'Diagnostics & Logging', subtitle: 'Server logs', route: 'dashboard/logs', admin: true }
             ] },

@@ -56,6 +56,11 @@ function jpxTagDarkLogo(imgEl) {
             }
             if (alphaSum <= 0) return;
             const avg = lumSum / alphaSum; // alpha-weighted avg luminance of opaque pixels (0..255)
+            // Dark logo -> light frosted pill so a near-black logo doesn't vanish on a dark backdrop.
+            // (A near-WHITE logo gets NO pill -- the CSS outline on .jpx-dh-logo covers its legibility
+            // consistently on every server. The pill's canvas sampling only succeeds where the image
+            // loads cross-origin without auth: true for Plex's token-in-URL logos, NOT Jellyfin's, so a
+            // white-logo pill was appearing on Plex ONLY. The outline avoids that inconsistency.)
             if (avg < 60 && imgEl.isConnected) imgEl.classList.add("jpx-logo-dark");
         } catch (e) { /* tainted canvas / anything -> leave the logo untouched */ }
     };
@@ -156,14 +161,14 @@ function qualityBadges(ms) {
     const v = streams.find(s => s.Type === 'Video');
     const a = streams.find(s => s.Type === 'Audio' && s.IsDefault) || streams.find(s => s.Type === 'Audio');
     const out = [];
-    if (v && v.Height) {
-        const h = v.Height, w = v.Width || 0;
+    if (v && (v.Height || v.Width)) {
+        const h = v.Height || 0, w = v.Width || 0;
         let res = null;
-        if (h >= 2000 || w >= 3800) res = '4K';
-        else if (h >= 1400 || w >= 2400) res = '2K';
-        else if (h >= 1000) res = '1080p';
-        else if (h >= 700) res = '720p';
-        else if (h >= 400) res = '480p';
+        if (h >= 2000 || w >= 3400) res = '4K';
+        else if (h >= 1400 || w >= 2560) res = '2K';
+        else if (h >= 900 || w >= 1700) res = '1080p';
+        else if (h >= 600 || w >= 1200) res = '720p';
+        else if (h >= 400 || w >= 700) res = '480p';
         if (res) out.push({ t: res });
     }
     if (v) {
@@ -1638,10 +1643,10 @@ function loadPersonFilmography(item, apiClient, el, kind, onBackdrop) {
             let items = (res && res.Items) || [];
             el.classList.remove('jpx-tab-loading');
             if (onBackdrop) {
-                const withBd = items.filter(i => i.BackdropImageTags && i.BackdropImageTags[0]);
+                const withBd = items.filter(i => i.__backdropUrl || (i.BackdropImageTags && i.BackdropImageTags[0]));
                 if (withBd.length) {
                     const p = withBd[Math.floor(Math.random() * withBd.length)];
-                    onBackdrop(apiClient.getScaledImageUrl(p.Id, { type: 'Backdrop', maxWidth: 1920, tag: p.BackdropImageTags[0] }));
+                    onBackdrop(p.__backdropUrl || apiClient.getScaledImageUrl(p.Id, { type: 'Backdrop', maxWidth: 1920, tag: p.BackdropImageTags && p.BackdropImageTags[0] }));
                 }
             }
             // "Group multiple roles" — collapse a title the person appears in more than once

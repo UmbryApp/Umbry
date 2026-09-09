@@ -149,6 +149,9 @@ export async function getPlexLibraries(srv: PlexServer): Promise<Dict[]> {
 /** Plex metadata item -> Jellyfin item (carries a ready-to-use __primaryImageUrl). */
 export function mapPlexItem(srv: PlexServer, m: Dict): Dict {
     const type = String(m.type);
+    // clearLogo ships in the list response Image[] too, so home rows + the hero get the logo (the
+    // hero renders item.ImageTags.Logo; without this Plex items fell back to a plain text title).
+    const logoImg = ((m.Image as Dict[]) || []).find(im => String(im.type) === 'clearLogo');
     return {
         Id: srv.id + '_' + m.ratingKey,
         Name: m.title,
@@ -162,7 +165,7 @@ export function mapPlexItem(srv: PlexServer, m: Dict): Dict {
         CommunityRating: m.audienceRating ?? m.rating,
         OfficialRating: m.contentRating,
         IsFolder: type === 'show' || type === 'season' || type === 'artist' || type === 'album',
-        ImageTags: { Primary: String(m.thumb || '') },
+        ImageTags: { Primary: String(m.thumb || ''), ...(logoImg ? { Logo: String(logoImg.url) } : {}) },
         // Music fields (tracks/albums) — the player, pill and album page read these.
         IndexNumber: m.index != null ? Number(m.index) : undefined,
         ParentIndexNumber: m.parentIndex != null ? Number(m.parentIndex) : undefined,
@@ -254,6 +257,42 @@ export async function getPlexItemsByGenre(srv: PlexServer, sectionKey: string, g
 }
 
 /** Plex collections in a library section -> Jellyfin BoxSet-shaped items. */
+/** Titles a person appears in, on a Plex server. `tagId` is the Plex Role/crew tag id (the
+ *  `person_<id>` key minted in mapPlexItem's People). Plex has no cross-section person query, so
+ *  aggregate each relevant library section with the `?actor=<id>` filter -- falling back to
+ *  director/writer/producer for crew-only people -- then dedupe. Without this the custom person
+ *  page's { PersonIds } query fell through to the whole movie library (wrong filmography + random
+ *  backdrops drawn from it). Mirrors getPlexItemsByGenre's /sections/{key}/all pattern. */
+export async function getPlexPersonFilmography(srv: PlexServer, tagId: string, kind: string, limit = 300, sort?: string): Promise<Dict[]> {
+    if (!/^\d+$/.test(String(tagId || ''))) return [];
+    const wantShows = /Series|Show/i.test(String(kind || ''));
+    const type = wantShows ? 2 : 1;
+    const collType = wantShows ? 'tvshows' : 'movies';
+    const libs = await getPlexLibraries(srv);
+    const wanted = libs.filter(l => l.CollectionType === collType);
+    if (!wanted.length) return [];
+    const psort = plexSortForLibrary(sort, 'Ascending') || 'originallyAvailableAt:desc';
+    const fetchField = async (field: string): Promise<Dict[]> => {
+        const arrs = await Promise.all(wanted.map(l => plexGet(srv.base, srv.token,
+            '/library/sections/' + String(l.__plexSection) + '/all?type=' + type
+            + '&' + field + '=' + encodeURIComponent(tagId)
+            + '&sort=' + encodeURIComponent(psort)
+            + '&X-Plex-Container-Size=' + limit)
+            .then(mc => ((mc.Metadata as Dict[]) || []).map(m => mapPlexItem(srv, m)))
+            .catch(() => [] as Dict[])));
+        return arrs.flat();
+    };
+    let items = await fetchField('actor');
+    if (!items.length) {
+        for (const f of ['director', 'writer', 'producer']) {
+            items = await fetchField(f); // eslint-disable-line no-await-in-loop
+            if (items.length) break;
+        }
+    }
+    const seen: Record<string, boolean> = {};
+    return items.filter(i => (seen[String(i.Id)] ? false : (seen[String(i.Id)] = true)));
+}
+
 export async function getPlexCollections(srv: PlexServer, sectionKey: string): Promise<Dict[]> {
     const mc = await plexGet(srv.base, srv.token, '/library/sections/' + sectionKey + '/collections?X-Plex-Container-Size=300');
     const meta = (mc.Metadata as Dict[]) || [];

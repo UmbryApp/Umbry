@@ -2,9 +2,9 @@
 .jpx-hero {
     position: relative;
     width: 100%;
-    height: 60vh;
-    min-height: 400px;
-    max-height: 680px;
+    height: 70vh;
+    min-height: 440px;
+    max-height: 860px;
     /* Sit BELOW the floating nav so the nav has its own line above the hero (Moonfin-style),
        instead of overlaying the poster. */
     margin: 3.7rem 0 1.4em;
@@ -213,8 +213,8 @@
 /* Tighter hero on small screens */
 @media (max-width: 800px) {
     .jpx-hero {
-        height: 52vh;
-        min-height: 320px;
+        height: 60vh;
+        min-height: 380px;
     }
 
     .jpx-hero-overview {
@@ -236,7 +236,7 @@
     border: 0;
     pointer-events: none;
     z-index: 0;
-    transform: scale(1.4);
+    transform: scale(1.14);
     transform-origin: center;
     opacity: 0;
 }

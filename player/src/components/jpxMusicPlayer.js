@@ -114,7 +114,7 @@ export function openJpxMusicPlayer() {
     const volSlider = q('.jpx-mp-vol-slider');
     volSlider.addEventListener('input', () => {
         const v = parseInt(volSlider.value, 10) || 0;
-        try { if (playbackManager.isMuted(player()) && v > 0) playbackManager.setMute(false, player()); playbackManager.setVolume(v, player()); } catch (e) { /* ignore */ }
+        try { const p = player(); if (p) { if (playbackManager.isMuted(p) && v > 0) playbackManager.setMute(false, p); if (typeof p.setVolume === 'function') p.setVolume(v); else playbackManager.setVolume(v, p); } } catch (e) { /* ignore */ }
         volSlider.style.setProperty('--v', v + '%');
         q('.jpx-mp-vol-ic').textContent = v <= 0 ? 'volume_off' : (v < 45 ? 'volume_down' : 'volume_up');
     });
@@ -197,8 +197,9 @@ function refresh(full) {
     try {
         const vs = q('.jpx-mp-vol-slider'), vi = q('.jpx-mp-vol-ic');
         if (vs && vi) {
-            const m = playbackManager.isMuted(player());
-            const vv = Math.round(playbackManager.getVolume(player()) || 0);
+            const p = player();
+            const m = playbackManager.isMuted(p);
+            const vv = Math.round(((p && typeof p.getVolume === 'function') ? p.getVolume() : playbackManager.getVolume(p)) || 0);
             if (document.activeElement !== vs) vs.value = m ? 0 : vv;
             vs.style.setProperty('--v', (m ? 0 : vv) + '%');
             vi.textContent = (m || vv <= 0) ? 'volume_off' : (vv < 45 ? 'volume_down' : 'volume_up');

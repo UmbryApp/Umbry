@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useReducer, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Dashboard from 'utils/dashboard';
+import toast from 'components/toast/toast';
 import { ServerConnections } from 'lib/jellyfin-apiclient';
 import Events from 'utils/events';
 
@@ -123,6 +124,8 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
     const [ isJellyfinServer, setIsJellyfinServer ] = useState(true);
     // true only inside the Umbry desktop app (preload exposes window.umbry) — gates the Uninstall row
     const isElectron = typeof window !== 'undefined' && !!(window as { umbry?: unknown }).umbry;
+    // true inside the Android/Capacitor app (native WebView) — enables the mobile update check
+    const isCapacitor = typeof window !== 'undefined' && !!(window as { Capacitor?: unknown }).Capacitor;
     useEffect(() => {
         if (!open) return;
         let addr = '';
@@ -191,7 +194,24 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
                 break;
             case 'check_updates': {
                 const u = (window as { umbry?: { checkUpdate?: () => Promise<unknown> } }).umbry;
-                if (u?.checkUpdate) { try { await u.checkUpdate(); } catch (e) { /* ignore */ } }
+                if (u?.checkUpdate) { try { await u.checkUpdate(); } catch (e) { /* ignore */ } break; }
+                // Mobile (Capacitor): compare the injected build version to the APK feed on dl.umbry.org.
+                if (isCapacitor) {
+                    const cur = String((window as { __UMBRY_VERSION?: string }).__UMBRY_VERSION || '');
+                    const cmp = (a: string, b: string) => { const pa = a.split('.').map(Number), pb = b.split('.').map(Number); for (let i = 0; i < Math.max(pa.length, pb.length); i++) { const d = (pa[i] || 0) - (pb[i] || 0); if (d) return d; } return 0; };
+                    try {
+                        const r = await fetch('https://dl.umbry.org/apk-latest.json?t=' + Date.now(), { cache: 'no-store' });
+                        const feed = await r.json();
+                        const latest = String((feed && feed.version) || '');
+                        if (latest && (!cur || cmp(latest, cur) > 0)) {
+                            if (window.confirm('Update available: Umbry ' + latest + '.\nDownload and install it now?')) {
+                                window.open(String((feed && feed.url) || 'https://umbry.org/#download'), '_blank');
+                            }
+                        } else {
+                            toast('Umbry is up to date' + (cur ? ' (' + cur + ')' : '') + '.');
+                        }
+                    } catch (e) { toast('Couldn\u2019t check for updates. Try again later.'); }
+                }
                 break;
             }
             case 'uninstall_umbry': {
@@ -439,7 +459,7 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
 
             <div className='jpx-settings-list'>
                 {panel.sections.map((sec, si) => {
-                    const rows = sec.rows.filter(r => (!r.admin || (isAdmin && isJellyfinServer)) && (!r.electronOnly || isElectron));
+                    const rows = sec.rows.filter(r => (!r.admin || (isAdmin && isJellyfinServer)) && (!r.electronOnly || isElectron) && (!r.nativeOnly || isElectron || isCapacitor));
                     if (!rows.length) return null; // don't render a header for a section whose rows are all hidden
                     return (
                         <React.Fragment key={si}>

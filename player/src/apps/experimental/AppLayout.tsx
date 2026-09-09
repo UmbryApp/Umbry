@@ -33,6 +33,7 @@ installParentalEnforcement();
 import './theme/jpxThemeTokens.scss';
 import './theme/jpxDetail.scss';
 import './AppOverrides.scss';
+import './theme/jpxMobileHardening.scss';
 
 // Umbry: Moonfin-style shell — a floating icon nav pill over full-bleed content,
 // replacing the stock top toolbar + drawer.

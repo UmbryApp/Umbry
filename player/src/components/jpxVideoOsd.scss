@@ -53,6 +53,9 @@
 }
 .jpx-osd-center .btnPause .material-icons { font-size: 4em; }
 .jpx-osd-hidden { opacity: 0; pointer-events: none !important; }
+/* When the More menu is open, move the center transport buttons out of the way so they don't
+   overlap/fight the menu on a phone. */
+.jpx-osd-menuopen .jpx-osd-center { opacity: 0; pointer-events: none; }
 .jpx-osd-hidden > * { pointer-events: none !important; }
 
 /* ---- bottom block ---- */
@@ -244,3 +247,6 @@ body:has(#videoOsdPage:not(.hide)) .MuiToolbar-root:has(> .MuiTypography-root) {
 .jpx-osd-pbt-r { flex: 1; text-align: right; }
 .jpx-osd-pbt-above { margin-bottom: 0.1rem; }
 .jpx-osd-pbt-below { margin-top: 0.1rem; }
+
+/* Hide the top-right clock while in native fullscreen/immersive. */
+body.jpx-immersive .jpx-clock { display: none !important; }

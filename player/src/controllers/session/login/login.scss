@@ -286,6 +286,7 @@ body:has(.jpx-server-select:not(.hide)) #loginPage [class*='padded'] {
 #loginPage .jpx-server-select {
     max-height: calc(100dvh - 1.5rem);
     overflow-y: auto;
+    overflow-x: hidden;
 }
 /* Entrance that keeps the translate(-50%,-50%) centering while sliding in from the right. */
 @keyframes jpxSsIn {
@@ -359,7 +360,7 @@ body:has(.jpx-server-select:not(.hide)) #loginPage [class*='padded'] {
 
 .jpx-servers {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);   /* always 3 servers per row */
+    grid-template-columns: repeat(3, minmax(0, 1fr));   /* always 3 servers per row */
     gap: 1.1em 0.5em;
     align-items: start;
     justify-items: stretch;
@@ -367,6 +368,7 @@ body:has(.jpx-server-select:not(.hide)) #loginPage [class*='padded'] {
 }
 
 .jpx-server-card {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -386,8 +388,8 @@ body:has(.jpx-server-select:not(.hide)) #loginPage [class*='padded'] {
 }
 
 .jpx-server-logo {
-    width: 4.5rem;
-    height: 4.5rem;
+    width: clamp(2.7rem, 13vw, 4.5rem);
+    height: clamp(2.7rem, 13vw, 4.5rem);
     object-fit: contain;
     filter: drop-shadow(0 3px 12px rgba(0, 0, 0, 0.5));
 }
@@ -399,6 +401,15 @@ body:has(.jpx-server-select:not(.hide)) #loginPage [class*='padded'] {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+/* Umbry mobile: shrink the picker so 3 cards + names + the Add/Remove buttons all fit the
+   phone width with no horizontal scroll and the buttons stay centered under the grid. */
+@media (max-width: 560px) {
+    #loginPage .jpx-server-select { width: min(96vw, 460px); padding: 1.7em 1.15em; }
+    .jpx-servers { gap: 0.9em 0.35em; }
+    .jpx-server-card { padding: 0.4em 0.3em; gap: 0.4em; }
+    .jpx-server-name { font-size: 0.8rem; }
 }
 
 /* Match the account screen's "Sign in" button (.jpx-account-submit) exactly: horizontal

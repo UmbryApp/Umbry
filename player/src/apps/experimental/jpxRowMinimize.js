@@ -29,7 +29,16 @@ let store = {};          // { serverId: [titles] }
 let stripSig = null;     // last-rendered drawer signature (cheap rebuild guard)
 let scheduled = false;
 let drawerOpen = true;   // drawer open/closed (persisted)
-const posterCache = {};  // key -> poster url captured at minimize time (best-effort, session-only)
+// Poster thumbnails are persisted device-locally (localStorage) so they survive the FULL PAGE RELOAD
+// that a server switch triggers — otherwise minimized rows fall back to gradients on return.
+// Shape: { "<serverId>": { "<rowKey>": "<url>" } }.
+const POSTER_KEY = 'jpx-rowmin-posters';
+function loadPosters() {
+    try { const v = JSON.parse(localStorage.getItem(POSTER_KEY) || '{}'); return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {}; } catch (e) { return {}; }
+}
+function savePosters(p) { try { localStorage.setItem(POSTER_KEY, JSON.stringify(p)); } catch (e) { /* ignore */ } }
+function setPoster(sid, key, url) { if (!url) return; const p = loadPosters(); if (!p[sid]) p[sid] = {}; p[sid][key] = url; savePosters(p); }
+function delPoster(sid, key) { const p = loadPosters(); if (p[sid]) { delete p[sid][key]; if (!Object.keys(p[sid]).length) delete p[sid]; savePosters(p); } }
 
 function loadStore() {
     const v = getPref(PREF_KEY, {});
@@ -162,7 +171,7 @@ function ensureButton(section, key) {
         const k = btn.getAttribute('data-key') || key;
         // capture a poster now, while the row is still visible (best chance the images have loaded)
         const poster = posterFor(section);
-        if (poster) posterCache[k] = poster;
+        if (poster) setPoster(activeServerId(), k, poster);
         const list = listFor(activeServerId());
         if (list.indexOf(k) === -1) {
             list.push(k);
@@ -269,7 +278,7 @@ function renderDrawer(entries, home) {
                 if (!list.length) delete store[sid];
                 saveStore();
             }
-            delete posterCache[k];
+            delPoster(sid, k);
             apply();
         });
         content.appendChild(chip);
@@ -285,23 +294,33 @@ function apply() {
         renderDrawer([], null);
         return;
     }
-    const list = store[activeServerId()] || [];
+    const sid = activeServerId();
+    const list = store[sid] || [];
     const sections = Array.prototype.slice.call(home.querySelectorAll('.verticalSection'));
     const keys = computeKeys(sections);
+    const posters = loadPosters();
+    let postersDirty = false;
+    const remember = (key, url) => { if (!url) return; if (!posters[sid]) posters[sid] = {}; if (posters[sid][key] !== url) { posters[sid][key] = url; postersDirty = true; } };
     const entries = [];
 
     sections.forEach((section, i) => {
         const key = keys[i];
         if (!key) return; // untitled section — no control, never minimized
         ensureButton(section, key);
+        const stored = (posters[sid] && posters[sid][key]) || null;
         if (list.indexOf(key) !== -1) {
             section.classList.add(HIDDEN_CLASS);
-            entries.push({ key: key, name: titleOf(section), poster: posterCache[key] || posterFor(section) });
+            let poster = stored;
+            if (!poster) { poster = posterFor(section); remember(key, poster); }
+            entries.push({ key: key, name: titleOf(section), poster: poster });
         } else {
             section.classList.remove(HIDDEN_CLASS);
+            // remember this visible row's poster now (images are loaded while visible) so it survives reloads
+            if (!stored) remember(key, posterFor(section));
         }
     });
 
+    if (postersDirty) savePosters(posters);
     renderDrawer(entries, home);
 }
 

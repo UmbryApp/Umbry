@@ -2048,6 +2048,10 @@ export class HtmlVideoPlayer {
     setVolume(val) {
         const mediaElement = this.#mediaElement;
         if (mediaElement) {
+            // Set the element volume directly. Web Audio gain was tried but silences cross-origin
+            // media (no crossOrigin on the element -> tainted graph); on Android/Chromium elem.volume
+            // is honored (the read-only rule is iOS-specific). Umbry's UI calls this directly to
+            // bypass playbackManager's mobile physical-volume gate.
             mediaElement.volume = Math.pow(val / 100, 3);
         }
     }
@@ -2055,6 +2059,9 @@ export class HtmlVideoPlayer {
     getVolume() {
         const mediaElement = this.#mediaElement;
         if (mediaElement) {
+            if (appHost.supports(AppFeature.PhysicalVolumeControl) && this._jpxVolGain != null) {
+                return Math.min(Math.round(Math.pow(this._jpxVolGain, 1 / 3) * 100), 100);
+            }
             return Math.min(Math.round(Math.pow(mediaElement.volume, 1 / 3) * 100), 100);
         }
     }
@@ -2071,6 +2078,12 @@ export class HtmlVideoPlayer {
         const mediaElement = this.#mediaElement;
         if (mediaElement) {
             mediaElement.muted = mute;
+            try {
+                if (appHost.supports(AppFeature.PhysicalVolumeControl) && this._jpxGainNode) {
+                    this._jpxMuted = mute;
+                    this._jpxGainNode.gain.value = mute ? 0 : (this._jpxVolGain != null ? this._jpxVolGain : 1);
+                }
+            } catch (e) { /* ignore */ }
         }
     }
 

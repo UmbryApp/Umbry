@@ -1,0 +1,57 @@
+// Umbry — mobile hardening. Native-app feel on touch/phone layouts. Scoped to .layout-mobile
+// (jellyfin sets it on <body>) so desktop and TV are unaffected. Additive, layout-safe polish:
+// tap feedback, overscroll containment, long-press callouts, chrome text-selection, no sideways
+// scroll, and comfortable touch targets on the smallest controls.
+
+.layout-mobile {
+    // kill the blue/grey tap flash on every control
+    * { -webkit-tap-highlight-color: transparent; }
+
+    // no iOS text auto-inflation, and never a sideways body scroll on a phone
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    overflow-x: hidden;
+    // keep pull-to-refresh / rubber-band from chaining out of the app
+    overscroll-behavior-y: contain;
+
+    // long-press on posters/art shouldn't pop the image save/callout menu
+    img,
+    .cardImageContainer,
+    [is='emby-button'],
+    button {
+        -webkit-touch-callout: none;
+    }
+
+    // UI chrome shouldn't be text-selectable on a long-press (content text stays selectable)
+    .jpx-nav-pill,
+    [is='emby-button'],
+    button,
+    [role='tab'],
+    .jpx-rowmin-btn,
+    .jpx-rowmin-tab,
+    .jpx-rowmin-chip {
+        -webkit-user-select: none;
+        user-select: none;
+    }
+
+    // --- touch targets: keep the visual size but expand the tap area to ~44px on the small controls ---
+    .jpx-rowmin-btn {
+        position: relative;
+        &::before { content: ''; position: absolute; inset: -9px; } // 27px visual -> ~45px hit area
+    }
+
+    // fixed nav pill: respect the notch / home indicator on whichever edge it is anchored to
+    // (env() is 0 on non-notched devices, so no visible change there)
+    .jpx-nav--top-left,
+    .jpx-nav--top-center,
+    .jpx-nav--top-right { top: calc(0.7rem + env(safe-area-inset-top, 0px)); }
+    .jpx-nav--bottom-left,
+    .jpx-nav--bottom-center,
+    .jpx-nav--bottom-right { bottom: calc(0.7rem + env(safe-area-inset-bottom, 0px)); }
+    .jpx-nav--top-left,
+    .jpx-nav--bottom-left { left: calc(1rem + env(safe-area-inset-left, 0px)); }
+    .jpx-nav--top-right,
+    .jpx-nav--bottom-right { right: calc(1rem + env(safe-area-inset-right, 0px)); }
+    .jpx-nav--left-center { left: calc(0.7rem + env(safe-area-inset-left, 0px)); }
+    .jpx-nav--right-center { right: calc(0.7rem + env(safe-area-inset-right, 0px)); }
+}

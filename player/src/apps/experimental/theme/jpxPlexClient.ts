@@ -23,6 +23,7 @@ import {
     getPlexOnDeck,
     getPlexGenres,
     getPlexItemsByGenre,
+    getPlexPersonFilmography,
     getPlexSimilar,
     getPlexTrailer,
     plexSortParam,
@@ -300,6 +301,20 @@ export function makePlexApiClient(srv: PlexServer): Dict {
                     if (!tItems.length) tItems = await getPlexChildren(srv, akey).catch(() => [] as Dict[]);
                     return { Items: tItems, TotalRecordCount: tItems.length };
                 }
+                // Person filmography: the custom person page queries { PersonIds, IncludeItemTypes }.
+                // Plex has no cross-section person query, so resolve the person tag id to its titles
+                // via ?actor=<id> across sections. Without this it fell through to plexServerWide ->
+                // the whole movie library (the reported "Hallmark movies on every actor" bug + the
+                // random backdrops picked from that wrong list).
+                const personIds = query.PersonIds || query.personIds;
+                if (personIds) {
+                    const pp = parsePlexId(srv, String(personIds).split(',')[0].trim());
+                    if (pp.kind === 'person') {
+                        const films = await getPlexPersonFilmography(srv, pp.key, String(query.IncludeItemTypes || 'Movie'), Number(query.Limit || query.limit || 300), String(query.SortBy || '')).catch(() => [] as Dict[]);
+                        return { Items: films, TotalRecordCount: films.length };
+                    }
+                    return { Items: [], TotalRecordCount: 0 };
+                }
                 const pid = query.ParentId;
                 const limit = Number(query.Limit || query.limit || 100);
                 const genre = parsePlexGenreId(srv, String(query.GenreIds || query.GenreId || query.ParentId || ''));
@@ -513,12 +528,20 @@ export function plexSdkAdapter(srv: PlexServer) {
                         const codec = String((it && it.__videoCodec) || '').toLowerCase();
                         // Browsers can direct-play mp4/mov/m4v/webm with a mainstream codec; anything
                         // else (mkv, avi, ts, hevc-in-mkv, …) is transcoded by Plex to HLS.
+                        const wcap = window as unknown as { Capacitor?: { Plugins?: { NativeVideo?: unknown } } };
+                        const nativeCap = !!(wcap.Capacitor && wcap.Capacitor.Plugins && wcap.Capacitor.Plugins.NativeVideo);
                         const browserNative = /^(mp4|mov|m4v|webm)$/.test(container) && /(h264|avc|vp8|vp9|av01|av1)/.test(codec);
+                        // Native ExoPlayer direct-plays far more than a browser (mkv/ts/avi + hevc), and a direct
+                        // file is byte-range seekable BOTH ways; the Plex transcode HLS is not (a backward seek
+                        // 404s discarded segments -> the player errors and drops back to the detail page). So in
+                        // the native app prefer direct-play for anything ExoPlayer reliably decodes.
+                        const nativeDirect = nativeCap && /^(mp4|mov|m4v|webm|mkv|ts|m2ts|mpegts|avi)$/.test(container) && /(h264|avc|hevc|h265|hvc1|mpeg4|vp8|vp9|av01|av1)/.test(codec);
+                        const canDirect = browserNative || nativeDirect;
                         const baseStreams = [
                             { Type: 'Video', Codec: codec || 'h264', Index: 0, IsDefault: true },
                             { Type: 'Audio', Codec: 'aac', Index: 1, Language: 'eng', IsDefault: true }
                         ];
-                        if (streamUrl && browserNative) {
+                        if (streamUrl && canDirect) {
                             const ms = {
                                 Id: p.key, ItemId: String(idPart), Path: streamUrl,
                                 Protocol: 'Http', SupportsDirectPlay: true, SupportsDirectStream: false,
