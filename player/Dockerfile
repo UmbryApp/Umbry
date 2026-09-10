@@ -1,5 +1,5 @@
 # --- build stage: compile the web app from source ---
-FROM node:20-bullseye AS build
+FROM node:24-bookworm AS build
 WORKDIR /src
 COPY package.json package-lock.json ./
 RUN npm ci
