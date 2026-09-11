@@ -1701,3 +1701,13 @@ body:has(.jpx-grouping-page) { background-color: #060512 !important; }
 }
 .jpx-grpcard-y { color: rgba(255, 255, 255, 0.55) !important; font-size: 0.8rem; text-align: center; text-decoration: none !important; }
 .jpx-grpcard:active .jpx-grpcard-img { transform: scale(0.97); }
+
+/* Umbry: downloading progress ring on the detail Download button — fills clockwise in the accent from the top. */
+.jpx-dh-abtn-ic.jpx-dl-ring { position: relative; }
+.jpx-dh-abtn-ic.jpx-dl-ring::after {
+    content: ''; position: absolute; inset: -2px; border-radius: 50%;
+    background: conic-gradient(from 0deg, var(--jpx-t-accent, #c235ff) var(--dlpct, 0%), rgba(255, 255, 255, 0.18) 0);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    pointer-events: none;
+}

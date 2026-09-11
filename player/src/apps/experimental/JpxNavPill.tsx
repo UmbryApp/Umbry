@@ -16,6 +16,7 @@ import { getPref, setPref, subscribePrefs } from './theme/jpxPrefs';
 import { promptPin } from './theme/jpxPinPrompt';
 import { openSeerr, seerrConfigured } from './theme/jpxSeerr';
 import { promptSeerr } from './theme/jpxSeerrPrompt';
+import { promptScrobble } from './theme/jpxScrobblePrompt';
 import { hasPin, enterKidsMode, exitKidsMode, kidsModeActive, purgeQueryCaches } from './theme/jpxParental';
 import { getPlexServers } from './theme/jpxPlex';
 import { makePlexApiClient } from './theme/jpxPlexClient';
@@ -142,8 +143,11 @@ const JpxNavPill = () => {
 
     // Navigate + collapse the pill back into the logo.
     const go = useCallback((to: string) => {
-        navigate(to);
         setOpen(false);
+        // appRouter.show() is the master router — it drives the shared history that BOTH the experimental
+        // React routes AND the legacy item-details view observe, so it navigates from any screen. React
+        // Router's navigate() (and the raw hash) no-op over a legacy view like item details.
+        try { void appRouter.show(to); } catch { navigate(to); }
     }, [ navigate ]);
 
     const playRandom = useCallback(() => {
@@ -275,6 +279,9 @@ const JpxNavPill = () => {
         ...(getPref('pref_show_genres_button', true) ? [{ icon: 'theater_comedy', label: 'Genres', onClick: () => go('/jpxgenres'), active: location.pathname === '/jpxgenres' }] : []),
         ...(getPref('pref_show_favorites_button', true) ? [{ icon: 'favorite', label: 'Favorites', onClick: () => go('/home?tab=1'), active: isFavorites }] : []),
         ...(getPref('pref_show_libraries_in_toolbar', true) ? [{ icon: 'video_library', label: 'Libraries', onClick: (e: React.MouseEvent<HTMLElement>) => setLibAnchor(e.currentTarget) }] : []),
+        { icon: 'library_music', label: 'Music Servers', onClick: () => go('/subsonic'), active: location.pathname === '/subsonic' },
+        { icon: 'download', label: 'Downloads', onClick: () => go('/downloads'), active: location.pathname === '/downloads' },
+        { icon: 'sync_alt', label: 'Scrobbling', onClick: () => { void promptScrobble(); }, active: false },
         ...(getPref('pref_show_switch_server_button', true) ? [{ icon: 'dns', label: 'Switch Server', onClick: (e: React.MouseEvent<HTMLElement>) => openServerMenu(e.currentTarget) }] : []),
         { icon: kidsModeActive() ? 'lock' : 'lock_open', label: kidsModeActive() ? 'Exit Kids Mode' : 'Kids Mode', onClick: () => { void toggleKidsMode(); } },
         ...(isAdmin && isJellyfinServer ? [{ icon: 'settings', label: 'Dashboard', onClick: () => go('/jpxadmin'), active: location.pathname.startsWith('/jpxadmin') }] : [])

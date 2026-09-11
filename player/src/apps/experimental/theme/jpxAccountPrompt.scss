@@ -213,3 +213,7 @@
 }
 .jpx-account-avopt--up.is-sel { border-style: solid; border-color: #FF9A4B; }
 .jpx-account-avopt--up img { border: 0; }
+
+/* Umbry: Trakt modal keeps the app-wide solid-accent buttons (no gradient) */
+.jpx-trakt-card .jpx-account-submit:not(.jpx-account-submit--secondary):not(.jpx-account-submit--ghost),
+.jpx-scrobble-card .jpx-account-submit:not(.jpx-account-submit--secondary):not(.jpx-account-submit--ghost) { background: var(--jpx-t-accent, #c235ff); box-shadow: none; }

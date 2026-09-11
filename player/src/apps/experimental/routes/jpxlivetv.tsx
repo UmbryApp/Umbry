@@ -5,6 +5,8 @@
 // a timer. Played via the bundled hls.js. The channel list is windowed (only visible rows render)
 // so 2500+ channels stay smooth. No external service dependencies — channels are fetched directly.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ServerConnections } from 'lib/jellyfin-apiclient';
+import Page from 'components/Page';
 
 import './jpxLiveTv.scss';
 
@@ -141,6 +143,107 @@ const EPG_SOURCES: Array<{ provider: string; url: string; gz: boolean }> = [
     { provider: 'Xumo', url: 'https://raw.githubusercontent.com/BuddyChewChew/xumo-playlist-generator/main/playlists/xumo_epg.xml.gz', gz: true }
 ];
 
+const SRV_CAT = '📡 My Live TV';
+
+// Resolve a Jellyfin/Emby Live TV channel's playable HLS URL via PlaybackInfo (opens a live stream
+// and returns a self-authed transcoding URL). Server Live TV plays directly (its CORS allows us),
+// so it does NOT go through the FAST /hls relay.
+async function resolveServerStream(channelId: string): Promise<string> {
+    try {
+        const ac: any = (ServerConnections as any).currentApiClient?.();
+        if (!ac) return '';
+        const addr: string = ac.serverAddress();
+        const tok: string = ac.accessToken();
+        const uid: string = ac.getCurrentUserId();
+        const r = await fetch(`${addr}/Items/${channelId}/PlaybackInfo?UserId=${encodeURIComponent(uid)}`, {
+            method: 'POST',
+            headers: { 'Authorization': `MediaBrowser Token=\"${tok}\"`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        const info: any = await r.json();
+        const ms = info && info.MediaSources && info.MediaSources[0];
+        if (!ms) return '';
+        let src: string = ms.TranscodingUrl || ms.Path || '';
+        if (src && src.startsWith('/')) src = addr + src;
+        return src;
+    } catch { return ''; }
+}
+
+const IPTV_KEY = 'jpx-iptv-sources';
+const IPTV_PREFIX = '📺 ';   // pinned category prefix for user IPTV sources
+interface IptvSource { id: string; name: string; kind: 'm3u' | 'xtream'; url: string; user?: string; pass?: string; epg?: string }
+function getIptvSources(): IptvSource[] { try { return JSON.parse(localStorage.getItem(IPTV_KEY) || '[]'); } catch { return []; } }
+function saveIptvSources(list: IptvSource[]) { try { localStorage.setItem(IPTV_KEY, JSON.stringify(list)); } catch { /* ignore */ } }
+// An Xtream Codes login collapses to a standard get.php M3U (m3u_plus, with logos + groups) plus an
+// xmltv EPG, so both source types share one M3U code path below.
+function iptvUrls(s: IptvSource): { m3u: string; epg: string } {
+    const base = (s.url || '').replace(/\/+$/, '');
+    if (s.kind === 'xtream') {
+        const q = `username=${encodeURIComponent(s.user || '')}&password=${encodeURIComponent(s.pass || '')}`;
+        return { m3u: `${base}/get.php?${q}&type=m3u_plus&output=m3u8`, epg: `${base}/xmltv.php?${q}` };
+    }
+    return { m3u: base, epg: (s.epg || '').trim() };
+}
+
+// Add / manage user IPTV sources (M3U playlists or Xtream Codes logins). Themed to match the app.
+function IptvSourcesModal({ onClose, onChanged }: { onClose: () => void; onChanged: () => void }) {
+    const [list, setList] = useState<IptvSource[]>(() => getIptvSources());
+    const [kind, setKind] = useState<'m3u' | 'xtream'>('m3u');
+    const [name, setName] = useState('');
+    const [url, setUrl] = useState('');
+    const [user, setUser] = useState('');
+    const [pass, setPass] = useState('');
+    const [epg, setEpg] = useState('');
+    const [msg, setMsg] = useState('');
+    const commit = (next: IptvSource[]) => { saveIptvSources(next); setList(next); onChanged(); };
+    const add = () => {
+        if (!name.trim() || !url.trim()) { setMsg('Name and URL are required.'); return; }
+        const s: IptvSource = { id: 'src' + Date.now().toString(36), name: name.trim(), kind, url: url.trim(), user: user.trim() || undefined, pass: pass || undefined, epg: epg.trim() || undefined };
+        commit([...list, s]);
+        setName(''); setUrl(''); setUser(''); setPass(''); setEpg(''); setMsg('Added \u2014 channels will load into the list.');
+    };
+    const remove = (id: string) => commit(list.filter(s => s.id !== id));
+    return (
+        <div className='jpx-iptv-backdrop' onClick={onClose}>
+            <div className='jpx-iptv-modal' onClick={e => e.stopPropagation()}>
+                <div className='jpx-iptv-modal-head'>IPTV Sources<button type='button' className='jpx-iptv-x' onClick={onClose}><span className='material-icons'>close</span></button></div>
+                <p className='jpx-iptv-sub'>Add your own live channels from an M3U playlist or an Xtream Codes login. They appear pinned in the channel list under your source name. HLS (.m3u8) streams are supported.</p>
+                {list.length > 0 && (
+                    <div className='jpx-iptv-list'>
+                        {list.map(s => (
+                            <div className='jpx-iptv-item' key={s.id}>
+                                <div><div className='jpx-iptv-item-name'>{s.name}</div><div className='jpx-iptv-item-kind'>{s.kind === 'xtream' ? 'Xtream Codes' : 'M3U playlist'}</div></div>
+                                <button type='button' className='jpx-iptv-del' onClick={() => remove(s.id)} title='Remove'><span className='material-icons'>delete_outline</span></button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className='jpx-iptv-form'>
+                    <div className='jpx-iptv-seg'>
+                        <button type='button' className={kind === 'm3u' ? 'on' : ''} onClick={() => setKind('m3u')}>M3U URL</button>
+                        <button type='button' className={kind === 'xtream' ? 'on' : ''} onClick={() => setKind('xtream')}>Xtream Codes</button>
+                    </div>
+                    <input placeholder='Name (e.g. My IPTV)' value={name} onChange={e => setName(e.target.value)} />
+                    {kind === 'm3u' ? (
+                        <>
+                            <input placeholder='M3U playlist URL (http...)' value={url} onChange={e => setUrl(e.target.value)} />
+                            <input placeholder='XMLTV EPG URL (optional)' value={epg} onChange={e => setEpg(e.target.value)} />
+                        </>
+                    ) : (
+                        <>
+                            <input placeholder='Server URL (http://host:port)' value={url} onChange={e => setUrl(e.target.value)} />
+                            <input placeholder='Username' value={user} onChange={e => setUser(e.target.value)} />
+                            <input placeholder='Password' type='password' value={pass} onChange={e => setPass(e.target.value)} />
+                        </>
+                    )}
+                    {msg ? <div className='jpx-iptv-msg'>{msg}</div> : null}
+                    <button type='button' className='jpx-iptv-add' onClick={add}>Add source</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export const Component = () => {
     const [channels, setChannels] = useState<Channel[]>([]);
     const [loading, setLoading] = useState(true);
@@ -150,6 +253,8 @@ export const Component = () => {
     const [err, setErr] = useState('');
     const [favs, setFavs] = useState<Set<string>>(() => getFavs());
     const [dead, setDead] = useState<Set<string>>(() => getDead());
+    const [showSources, setShowSources] = useState(false);
+    const [iptvNonce, setIptvNonce] = useState(0);
     const [showInfo, setShowInfo] = useState(true);
     const [nowTs, setNowTs] = useState(() => Date.now());   // ticks so now/next refreshes
     const [scrollTop, setScrollTop] = useState(0);
@@ -223,6 +328,64 @@ export const Component = () => {
         return () => { dead = true; clearTimeout(spin); };
     }, [addChannels]);
 
+    // Umbry: pull the CURRENT server's own Live TV (antenna / tuner channels + EPG) into the list as
+    // a pinned "📡 My Live TV" category, alongside the FAST channels. Jellyfin/Emby only (Plex
+    // Live TV is a separate API). This is the user's real antenna/HDHomeRun feed via the server.
+    useEffect(() => {
+        let dead = false;
+        (async () => {
+            try {
+                const ac: any = (ServerConnections as any).currentApiClient?.();
+                if (!ac || ac.__plex || typeof ac.getLiveTvChannels !== 'function') return;
+                const uid = ac.getCurrentUserId();
+                const res: any = await ac.getLiveTvChannels({ UserId: uid, AddCurrentProgram: true, EnableImageTypes: 'Primary', Fields: 'PrimaryImageAspectRatio', StartIndex: 0, Limit: 500 });
+                if (dead) return;
+                const srvName: string = (ac.serverInfo && ac.serverInfo() && ac.serverInfo().Name) || 'My Server';
+                const items: any[] = (res && res.Items) || [];
+                const mapped: Channel[] = items.map((it: any): Channel => {
+                    const cp = it.CurrentProgram;
+                    const sched: Prog[] = cp && cp.StartDate ? [{ title: String(cp.Name || ''), start: Date.parse(cp.StartDate), stop: Date.parse(cp.EndDate) }] : [];
+                    let logo = '';
+                    try { if (it.ImageTags && it.ImageTags.Primary) logo = ac.getImageUrl(it.Id, { type: 'Primary', tag: it.ImageTags.Primary, maxHeight: 80 }); } catch { /* ignore */ }
+                    return {
+                        id: 'srv_' + String(it.Id), name: (it.Number ? it.Number + ' ' : '') + String(it.Name || ''),
+                        logo, category: SRV_CAT, provider: srvName, url: 'jpxserver:' + String(it.Id), tvgId: String(it.Id),
+                        sched: sched.length ? sched : undefined
+                    };
+                }).filter((c: Channel) => !!c.name);
+                if (mapped.length) addChannels(mapped);
+            } catch { /* ignore */ }
+        })();
+        return () => { dead = true; };
+    }, [addChannels]);
+
+    // Umbry: user-added IPTV sources (M3U playlists or Xtream Codes logins) \u2014 Sipario-style import.
+    // Fetched through the FAST /hls relay (for CORS), parsed like any M3U, and pinned under their own
+    // named category. HLS (.m3u8) plays via the same relay; raw MPEG-TS (.ts) may not (no remux yet).
+    useEffect(() => {
+        let dead = false;
+        for (const src of getIptvSources()) {
+            (async () => {
+                try {
+                    const { m3u, epg } = iptvUrls(src);
+                    if (!m3u) return;
+                    const cat = IPTV_PREFIX + src.name;
+                    const txt = await fetchText(W.hls + encodeURIComponent(m3u));
+                    if (dead || !txt) return;
+                    const chans = parseM3U(txt, src.name).map((c): Channel => ({ ...c, id: 'iptv_' + src.id + '_' + c.id, category: cat, provider: src.name }));
+                    if (chans.length) addChannels(chans);
+                    if (epg) {
+                        const xml = /\.gz($|\?)/.test(epg) ? await fetchTextGz(W.hls + encodeURIComponent(epg)) : await fetchText(W.hls + encodeURIComponent(epg));
+                        if (dead || !xml) return;
+                        const map = parseXmltv(xml);
+                        if (map.size) setChannels(prev => prev.map(c => (c.provider === src.name && c.tvgId && map.has(c.tvgId)) ? { ...c, sched: map.get(c.tvgId) } : c));
+                    }
+                } catch { /* ignore */ }
+            })();
+        }
+        return () => { dead = true; };
+    }, [addChannels, iptvNonce]);
+
     // Playback via hls.js.
     useEffect(() => {
         if (!active) return;
@@ -231,10 +394,15 @@ export const Component = () => {
         setErr('');
         bumpInfo();
         if (hlsRef.current) { try { hlsRef.current.destroy(); } catch { /* ignore */ } hlsRef.current = null; }
-        const needsProxy = !active.url.startsWith(FAST_BASE);  // external M3U (Roku/Xumo/Distro/LG) streams need the /hls relay; local base is already proxied
-        const finalSrc = needsProxy ? W.hls + encodeURIComponent(active.url) : active.url;
         let cancelled = false;
-        import('hls.js/dist/hls.js').then(({ default: Hls }: any) => {
+        (async () => {
+          try {
+            const isServer = active.url.startsWith('jpxserver:');
+            let playUrl = active.url;
+            if (isServer) { playUrl = await resolveServerStream(active.url.slice('jpxserver:'.length)); if (cancelled) return; if (!playUrl) { setErr('Could not start that channel.'); return; } }
+            const needsProxy = !isServer && !playUrl.startsWith(FAST_BASE);  // server Live TV plays direct (its CORS allows us); external FAST M3U uses the /hls relay
+            const finalSrc = needsProxy ? W.hls + encodeURIComponent(playUrl) : playUrl;
+            const { default: Hls } = await import('hls.js/dist/hls.js') as any;
             if (cancelled) return;
             if (Hls.isSupported()) {
                 const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
@@ -254,7 +422,8 @@ export const Component = () => {
                 video.src = finalSrc;
                 video.play().catch(() => {});
             } else { setErr('Your browser cannot play this stream.'); }
-        }).catch(() => setErr('Player failed to load.'));
+          } catch { setErr('Player failed to load.'); }
+        })();
         return () => { cancelled = true; };
     }, [active, bumpInfo]);
 
@@ -272,7 +441,7 @@ export const Component = () => {
         setFavs(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); saveFavs(n); return n; });
     }, []);
 
-    const cats = useMemo(() => ['All', ...(favs.size ? [FAV_CAT] : []), ...Array.from(new Set(channels.map(c => c.category))).sort()], [channels, favs]);
+    const cats = useMemo(() => { const uniq = Array.from(new Set(channels.map(c => c.category))); const srv = uniq.filter(c => c === SRV_CAT); const iptv = uniq.filter(c => c !== SRV_CAT && c.startsWith(IPTV_PREFIX)).sort(); const rest = uniq.filter(c => c !== SRV_CAT && !c.startsWith(IPTV_PREFIX)).sort(); return ['All', ...(favs.size ? [FAV_CAT] : []), ...srv, ...iptv, ...rest]; }, [channels, favs]);
     const shown = useMemo(() => {
         const q = query.trim().toLowerCase();
         return channels.filter(c => {
@@ -364,6 +533,7 @@ export const Component = () => {
     }
 
     return (
+        <Page id='jpxLiveTvPage' className='mainAnimatedPage'>
         <div className='jpx-livetv'>
             <div className='jpx-livetv-main'>
             <div className='jpx-livetv-stage' onPointerMove={bumpInfo} onPointerDown={bumpInfo}>
@@ -392,7 +562,7 @@ export const Component = () => {
             )}
             </div>
             <div className='jpx-livetv-side'>
-                <div className='jpx-livetv-head'>Live TV<span>{loading && channels.length === 0 ? 'Loading…' : channels.length + ' channels'}</span></div>
+                <div className='jpx-livetv-head'>Live TV<span className='jpx-livetv-head-meta'>{loading && channels.length === 0 ? 'Loading…' : channels.length + ' channels'}<button type='button' className='jpx-livetv-sources-btn' title='Add M3U / Xtream IPTV source' onClick={() => setShowSources(true)}><span className='material-icons'>playlist_add</span></button></span></div>
                 <div className='jpx-guide-toggle jpx-livetv-toggle'>
                     <button type='button' className='on'>List</button>
                     <button type='button' onClick={() => setView('grid')}>Guide</button>
@@ -423,6 +593,8 @@ export const Component = () => {
                     )}
                 </div>
             </div>
+            {showSources && <IptvSourcesModal onClose={() => setShowSources(false)} onChanged={() => setIptvNonce(n => n + 1)} />}
         </div>
+        </Page>
     );
 };

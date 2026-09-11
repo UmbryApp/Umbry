@@ -47,6 +47,7 @@ export function toggleWatchlist(item: { Id: string; ServerId?: string; Type?: st
         nowIn = true;
     }
     setPref(WL_KEY, list);
+    import('./jpxScrobbleSync').then(m => m.syncWatchlist(item, nowIn)).catch(() => { /* ignore */ });
     return nowIn;
 }
 

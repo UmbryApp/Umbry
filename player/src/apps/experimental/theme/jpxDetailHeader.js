@@ -13,6 +13,9 @@
 import layoutManager from 'components/layoutManager';
 import cardBuilder from 'components/cardbuilder/cardBuilder';
 import { isInWatchlist, toggleWatchlist } from './jpxWatchlist';
+import * as jpxDl from './jpxDownloads';
+import { getRating as jpxGetRating, syncRating as jpxSyncRating } from './jpxScrobbleSync';
+import { promptRate as jpxPromptRate } from './jpxRatePrompt';
 import { getPref, setPref } from './jpxPrefs';
 
 function esc(s) {
@@ -509,11 +512,44 @@ export function renderJpxDetailHeader(page, item, apiClient) {
             jpxWirePlayed(playedBtn, item, apiClient, item.Type === 'Book' || item.MediaType === 'Book');
             secondary.push(playedBtn);
         }
+        if (item && (item.Type === 'Movie' || item.Type === 'Series' || item.Type === 'Episode')) {
+            const rr0 = jpxGetRating(item.ServerId, item.Id);
+            const rlabel = (n) => n ? ('Rated ' + n) : 'Rate';
+            const rateBtn = makeBtn('star_rate', rlabel(rr0), null, 'jpx-dh-abtn-more' + (rr0 ? ' jpx-dh-abtn-accent' : ''));
+            rateBtn.addEventListener('click', () => {
+                jpxPromptRate(jpxGetRating(item.ServerId, item.Id)).then((v) => {
+                    if (v === undefined) return;
+                    jpxSyncRating(item, v);
+                    const lb = rateBtn.querySelector('.jpx-dh-abtn-lb'); if (lb) lb.textContent = rlabel(v);
+                    rateBtn.classList.toggle('jpx-dh-abtn-accent', !!v);
+                });
+            });
+            secondary.push(rateBtn);
+        }
         const favBtn = makeBtn('favorite_border', 'Favorite', null, 'jpx-dh-abtn-more');
         jpxWireFavorite(favBtn, item, apiClient);
         secondary.push(favBtn);
         secondary.push(makeBtn('playlist_add', 'Playlist', () => jpxOpenPlaylist(item, apiClient), 'jpx-dh-abtn-more'));
-        if (hasStock('.btnDownload')) secondary.push(makeBtn('get_app', 'Download', clickStock('.btnDownload'), 'jpx-dh-abtn-more'));
+        if (jpxDl.isDownloadable(item)) {
+            const dlId = jpxDl.entryId(item);
+            const st0 = (jpxDl.getEntry(dlId) || {}).status;
+            const dlBtn = makeBtn(st0 === 'done' ? 'download_done' : 'download', st0 === 'done' ? 'Downloaded' : 'Download', null, 'jpx-dh-abtn-more' + (st0 === 'done' ? ' jpx-dh-abtn-accent' : ''));
+            const paintDl = (status, pct) => {
+                const ic = dlBtn.querySelector('.material-icons'); const lb = dlBtn.querySelector('.jpx-dh-abtn-lb'); const icc = dlBtn.querySelector('.jpx-dh-abtn-ic');
+                if (status === 'done') { if (ic) ic.textContent = 'download_done'; if (lb) lb.textContent = 'Downloaded'; dlBtn.classList.add('jpx-dh-abtn-accent'); if (icc) { icc.classList.remove('jpx-dl-ring'); icc.style.removeProperty('--dlpct'); } }
+                else if (status === 'downloading') { if (ic) ic.textContent = 'downloading'; if (lb) lb.textContent = pct ? pct + '%' : 'Saving\u2026'; if (icc) { icc.classList.add('jpx-dl-ring'); icc.style.setProperty('--dlpct', (pct || 0) + '%'); } }
+                else if (status === 'error') { if (ic) ic.textContent = 'error_outline'; if (lb) lb.textContent = 'Retry'; dlBtn.classList.remove('jpx-dh-abtn-accent'); if (icc) { icc.classList.remove('jpx-dl-ring'); icc.style.removeProperty('--dlpct'); } }
+            };
+            const offDl = jpxDl.onDownloadsChanged((list) => { const en = list.find(x => x.id === dlId); if (en) paintDl(en.status, en.pct); });
+            dlBtn.addEventListener('click', () => {
+                const cur = (jpxDl.getEntry(dlId) || {}).status;
+                if (cur === 'done') { location.hash = '#/downloads'; return; }
+                paintDl('downloading', 0);
+                jpxDl.startDownload(item, apiClient).catch(() => paintDl('error'));
+            });
+            dlBtn.addEventListener('DOMNodeRemovedFromDocument', () => { try { offDl(); } catch (e) { /* ignore */ } });
+            secondary.push(dlBtn);
+        }
 
         if (secondary.length) {
             const moreBtn = makeBtn('expand_more', 'More', () => {

@@ -23,6 +23,8 @@ import { installParentalEnforcement } from './theme/jpxParentalEnforce';
 import { initParental } from './theme/jpxParental';
 import { initDeepLinkGuard } from './theme/jpxDeepLinkGuard';
 import { initJpxSpatialNav } from './theme/jpxSpatialNav';
+import { initJpxTrakt } from './theme/jpxTrakt';
+import { initJpxSimkl } from './theme/jpxSimkl';
 
 // Umbry: register the restore globally so ConnectionRequired can call it WITHOUT importing
 // this module (avoids an early module-init cycle), and run it now on load.
@@ -61,6 +63,8 @@ export const Component = () => {
         initJpxHoverBackdrop();
         initJpxCardMorph();
         initJpxSpatialNav();
+        initJpxTrakt();
+        initJpxSimkl();
     }, []);
 
     return (

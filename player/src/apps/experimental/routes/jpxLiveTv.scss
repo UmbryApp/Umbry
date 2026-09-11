@@ -215,7 +215,7 @@
     cursor: pointer;
 }
 .jpx-guide-toggle button:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
-.jpx-guide-toggle button.on { background: var(--lt-grad); color: #fff; }
+.jpx-guide-toggle button.on { background: var(--jpx-t-accent, var(--lt-accent)); color: #fff; }
 .jpx-livetv-toggle { margin: 0 1.1rem 0.6rem; }
 
 /* ---- TV Guide grid ---- */
@@ -368,3 +368,32 @@
     .jpx-livetv-side { flex: none; max-width: none; height: 60vh; }
     .jpx-guide-search { display: none; }
 }
+
+
+/* ---- IPTV sources button + modal (M3U / Xtream import) ---- */
+.jpx-livetv-head-meta { display: inline-flex; align-items: center; gap: 0.55rem; }
+.jpx-livetv-sources-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.85); cursor: pointer; padding: 0; }
+.jpx-livetv-sources-btn:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.jpx-livetv-sources-btn .material-icons { font-size: 18px; color: inherit; }
+.jpx-iptv-backdrop { position: fixed; inset: 0; z-index: 4000; background: rgba(6, 4, 14, 0.62); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.jpx-iptv-modal { width: min(460px, 96vw); max-height: 88vh; overflow: auto; border-radius: 16px; background: rgba(22, 18, 34, 0.97); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6); padding: 1.15rem 1.25rem 1.4rem; color: #fff; }
+.jpx-iptv-modal-head { display: flex; align-items: center; font-size: 1.15rem; font-weight: 800; }
+.jpx-iptv-x { margin-left: auto; background: transparent; border: 0; color: rgba(255, 255, 255, 0.7); cursor: pointer; display: inline-flex; padding: 0; }
+.jpx-iptv-x:hover { color: #fff; }
+.jpx-iptv-sub { margin: 0.45rem 0 0.9rem; font-size: 0.82rem; line-height: 1.45; color: rgba(255, 255, 255, 0.62); }
+.jpx-iptv-list { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.9rem; }
+.jpx-iptv-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.7rem; border-radius: 10px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); }
+.jpx-iptv-item-name { font-weight: 700; font-size: 0.9rem; }
+.jpx-iptv-item-kind { font-size: 0.72rem; color: rgba(255, 255, 255, 0.5); }
+.jpx-iptv-del { margin-left: auto; background: transparent; border: 0; color: rgba(255, 255, 255, 0.55); cursor: pointer; display: inline-flex; padding: 0; }
+.jpx-iptv-del:hover { color: #ff6b6b; }
+.jpx-iptv-form { display: flex; flex-direction: column; gap: 0.55rem; }
+.jpx-iptv-seg { display: inline-flex; border-radius: 10px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.14); align-self: flex-start; }
+.jpx-iptv-seg button { border: 0; background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.7); font-weight: 700; font-size: 0.8rem; padding: 0.4rem 0.9rem; cursor: pointer; }
+.jpx-iptv-seg button.on { background: var(--jpx-t-accent, #c235ff); color: var(--jpx-t-on-accent, #fff); }
+.jpx-iptv-form input { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 9px; padding: 0.6rem 0.75rem; color: #fff; font-size: 0.88rem; outline: none; }
+.jpx-iptv-form input:focus { border-color: var(--jpx-t-accent, #c235ff); }
+.jpx-iptv-form input::placeholder { color: rgba(255, 255, 255, 0.4); }
+.jpx-iptv-msg { font-size: 0.8rem; color: rgba(255, 255, 255, 0.75); }
+.jpx-iptv-add { margin-top: 0.2rem; background: var(--jpx-t-accent, #c235ff); color: var(--jpx-t-on-accent, #fff); border: 0; border-radius: 9px; padding: 0.62rem 1rem; font-weight: 800; font-size: 0.9rem; cursor: pointer; }
+.jpx-iptv-add:hover { filter: brightness(1.08); }
