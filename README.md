@@ -13,6 +13,22 @@
 
 Umbry is an **independent** project and is **not affiliated with, endorsed by, or sponsored by Jellyfin, Emby, or Plex**. All product names, logos, and brands are the property of their respective owners.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/01-home.jpg" alt="Cinematic home with an auto-playing hero" width="100%">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/02-detail.jpg" alt="Rich detail pages with cast, trailers and one-tap actions" width="49%">
+  &nbsp;
+  <img src="docs/screenshots/04-genres.jpg" alt="Browse everything by genre" width="49%">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/03-livetv.jpg" alt="Built-in free Live TV with a full channel guide" width="100%">
+</p>
+
 ## Two ways to run the Player
 
 - **Desktop app** — a native windowed app for Windows, macOS, and Linux. Nothing to configure, no ports. Most people want this: grab it from <https://umbry.org/#download>.
