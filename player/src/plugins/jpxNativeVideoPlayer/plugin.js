@@ -68,7 +68,8 @@ function buildNativeProfile(caps) {
             { Container: 'mp3,aac,flac,alac,m4a,m4b,ogg,oga,opus,wav,webma,ape,wv', Type: 'Audio' }
         ],
         TranscodingProfiles: [
-            { Container: 'ts', Type: 'Video', VideoCodec: 'h264', AudioCodec: 'aac,mp3', Protocol: 'hls', Context: 'Streaming', MaxAudioChannels: '6', MinSegments: '1', BreakOnNonKeyFrames: true }
+            { Container: 'ts', Type: 'Video', VideoCodec: 'h264', AudioCodec: 'aac,mp3', Protocol: 'hls', Context: 'Streaming', MaxAudioChannels: '6', MinSegments: '1', BreakOnNonKeyFrames: true },
+            { Container: 'mp3', Type: 'Audio', AudioCodec: 'mp3', Protocol: 'http', Context: 'Streaming', MaxAudioChannels: '2' }
         ],
         ContainerProfiles: [],
         CodecProfiles: [],
