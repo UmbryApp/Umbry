@@ -63,14 +63,26 @@ function AccountScreen({ onDone }: { onDone: () => void }) {
     const finish = () => { setExiting(true); setTimeout(onDone, 360); };
     const copyCode = () => { try { navigator.clipboard?.writeText(savedCode); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch { /* ignore */ } };
 
-    // First run: auto-detect a running Umbry Server and pre-fill it.
+    // First run: auto-detect a running Umbry Server and pre-fill it. Try the local/same-machine case
+    // first (localhost); if nothing is there, fall back to the full LAN scan so a Player on a
+    // DIFFERENT box than the Server still gets its address filled in (not merely listed in the
+    // dropdown). Previously the field was left blank whenever the Server lived on another machine.
     useEffect(() => {
         let cancelled = false;
         if (getSyncMode() === null && !getServerUrl()) {
-            detectLocalServer().then(found => {
+            detectLocalServer().then(async found => {
                 if (cancelled) return;
-                setDetecting(false);
-                if (found) { setServerUrlState(found); setDetected(true); }
+                if (found) { setServerUrlState(found); setDetected(true); setDetecting(false); return; }
+                try {
+                    const list = await detectAllServers();
+                    if (cancelled) return;
+                    if (list.length) {
+                        setServers(list);
+                        setServerUrlState(String(list[0]).replace(/^https?:\/\//, ''));
+                        setDetected(true);
+                    }
+                } catch { /* ignore */ }
+                if (!cancelled) setDetecting(false);
             }).catch(() => { if (!cancelled) setDetecting(false); });
         }
         return () => { cancelled = true; };

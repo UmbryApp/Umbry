@@ -266,3 +266,8 @@ body:has(.videoPlayerContainer) .jpx-mpill { display: none !important; }
     background-clip: content-box;
 }
 .jpx-mp-card-body::-webkit-scrollbar-track { background: transparent; }
+
+
+/* jpx-mpill drag styles */
+.jpx-mpill { touch-action: none; user-select: none; -webkit-user-select: none; }
+.jpx-mpill.jpx-dragging { cursor: grabbing; box-shadow: 0 16px 44px rgba(0, 0, 0, 0.6); }

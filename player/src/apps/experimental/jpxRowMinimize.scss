@@ -101,21 +101,34 @@ $jpx-accent: var(--jpx-t-accent, #9385F5);
     width: 92px;
 
     .jpx-rowmin-thumb {
-        width: 84px;
-        height: 48px;
-        border-radius: 8px;
-        background-color: rgba(255, 255, 255, 0.05);
+        position: relative;
+        width: 96px;
+        height: 94px;
+        margin-bottom: 6px;
+    }
+
+    .jpx-rowmin-poster {
+        position: absolute;
+        left: 8px;
+        top: 4px;
+        width: 56px;
+        height: 82px;
+        border-radius: 9px;
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
-        margin-bottom: 22px; // reserve room for the reflection rendered below
-        -webkit-box-reflect: below 2px linear-gradient(transparent 52%, rgba(255, 255, 255, 0.22));
-        transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+        background-color: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.4);
+        transform-origin: center center;
+        transition: transform 0.15s ease;
     }
 
-    .jpx-rowmin-thumb--fallback {
+    .jpx-rowmin-poster-0 { transform: rotate(0deg); z-index: 3; }
+    .jpx-rowmin-poster-1 { transform: rotate(6deg) translate(12px, -2px); z-index: 2; }
+    .jpx-rowmin-poster-2 { transform: rotate(12deg) translate(24px, -4px); z-index: 1; }
+
+    .jpx-rowmin-thumb--fallback .jpx-rowmin-poster {
         background-image: linear-gradient(100deg, #FFC670, #FF9A4B, #C77BD8, #9385F5);
     }
 

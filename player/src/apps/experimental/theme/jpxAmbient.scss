@@ -1,0 +1,34 @@
+/* Umbry ambient background (matches the native app's palette; static — no motion, so it never
+   competes with the hero's backdrop compositing). See jpxAmbient.ts. */
+#jpx-ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    contain: strict;
+    pointer-events: none;
+    background: #110d24; /* umbra ground */
+}
+#jpx-ambient span {
+    position: absolute;
+    display: block;
+    border-radius: 50%;
+    filter: blur(60px);
+}
+/* center each blob on its point via negative margin = half its size */
+#jpx-ambient .jpx-amb-b1 {  /* ember, top-left */
+    width: 88vmax; height: 88vmax; left: 18%; top: 28%; margin: -44vmax;
+    background: radial-gradient(circle, rgba(255, 122, 61, 0.55), transparent 60%);
+}
+#jpx-ambient .jpx-amb-b2 {  /* magenta, mid-right */
+    width: 98vmax; height: 98vmax; left: 82%; top: 42%; margin: -49vmax;
+    background: radial-gradient(circle, rgba(194, 53, 255, 0.5), transparent 60%);
+}
+#jpx-ambient .jpx-amb-b3 {  /* indigo, bottom-center */
+    width: 80vmax; height: 80vmax; left: 55%; top: 82%; margin: -40vmax;
+    background: radial-gradient(circle, rgba(91, 61, 245, 0.5), transparent 62%);
+}
+#jpx-ambient .jpx-amb-b4 {  /* pink, lower-left */
+    width: 66vmax; height: 66vmax; left: 30%; top: 70%; margin: -33vmax;
+    background: radial-gradient(circle, rgba(255, 77, 141, 0.5), transparent 62%);
+}

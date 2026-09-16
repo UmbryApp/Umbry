@@ -8,6 +8,8 @@ import { JPX_THEMES, DEFAULT_THEME_ID, type JpxThemeSpec, type JpxGlow } from '.
 import { applySeasonalFx } from './jpxSeasonalFx';
 import { getPref, subscribePrefs } from './jpxPrefs';
 import './jpxSeasonalFx.scss';
+import { ensureAmbient } from './jpxAmbient';
+import './jpxAmbient.scss';
 
 const SEASONAL_FX = ['halloween', 'xmas', 'thanksgiving', 'newyear', 'july4', 'stpatricks', 'valentines'];
 
@@ -205,6 +207,8 @@ export const applyTheme = (spec: JpxThemeSpec, persist = true): void => {
     // Bridge to the legacy --jpx-* vars the nav pill / drawer / auth pages already consume.
     set('--jpx-accent', toCss(c.accent));
     set('--jpx-accent-glow', toRgba(c.accent, 0.5));
+    // Umbry animated ambient background (themed from the accent)
+    ensureAmbient();
     set('--jpx-gradient', spec.gradient || toCss(c.accent));
 
     // MUI palette bridge — set Jellyfin's --jf-palette-* vars inline so the whole experimental

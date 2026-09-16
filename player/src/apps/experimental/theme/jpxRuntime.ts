@@ -116,7 +116,7 @@ function ensureClock(): void {
     if (clockEl) return;
     clockEl = document.createElement('div');
     clockEl.className = 'jpx-clock';
-    clockEl.style.cssText = 'position:fixed;top:0.85rem;right:1.1rem;z-index:1250;font-weight:600;font-size:0.95rem;'
+    clockEl.style.cssText = 'position:fixed;top:calc(0.7rem + env(safe-area-inset-top, 0px));right:1.1rem;z-index:1250;font-weight:600;font-size:0.95rem;'
         + 'color:#fff;background:rgba(18,18,24,0.55);backdrop-filter:blur(10px);padding:0.32em 0.7em;border-radius:10px;'
         + 'pointer-events:none;letter-spacing:0.5px;box-shadow:0 2px 10px rgba(0,0,0,0.35);font-variant-numeric:tabular-nums;';
     document.body.appendChild(clockEl);

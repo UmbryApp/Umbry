@@ -120,7 +120,7 @@ function computeKeys(sections) {
 
 // Pull one poster URL from an actual item in the row: prefer the emby card background-image, fall
 // back to <img> card sources. Returns a random valid url, or null (→ gradient fallback thumbcard).
-function posterFor(section) {
+function postersFor(section) {
     if (!section) return null;
     const urls = [];
     try {
@@ -137,8 +137,9 @@ function posterFor(section) {
         });
     } catch (e) { /* ignore */ }
     const valid = urls.filter((u) => u && u !== 'none' && /^(https?:|data:|blob:|\/)/i.test(u));
-    if (!valid.length) return null;
-    return valid[Math.floor(Math.random() * valid.length)];
+    const uniq = [];
+    for (const u of valid) { if (uniq.indexOf(u) === -1) uniq.push(u); if (uniq.length >= 3) break; }
+    return uniq;
 }
 
 function chevronSvg() {
@@ -170,8 +171,8 @@ function ensureButton(section, key) {
         e.stopPropagation();
         const k = btn.getAttribute('data-key') || key;
         // capture a poster now, while the row is still visible (best chance the images have loaded)
-        const poster = posterFor(section);
-        if (poster) setPoster(activeServerId(), k, poster);
+        const pics = postersFor(section);
+        if (pics.length) setPoster(activeServerId(), k, pics);
         const list = listFor(activeServerId());
         if (list.indexOf(k) === -1) {
             list.push(k);
@@ -202,7 +203,7 @@ function setDrawerHeight(drawer) {
 
 // Build / update the collapsible drawer of poster chips, in flow right under the hero.
 function renderDrawer(entries, home) {
-    const sig = entries.map((e) => e.key + ':' + (e.poster ? 'p' : 'g')).join('|') + '|' + (drawerOpen ? 'o' : 'c');
+    const sig = entries.map((e) => e.key + ':' + ((e.posters && e.posters.length) ? 'p' + e.posters.length : 'g')).join('|') + '|' + (drawerOpen ? 'o' : 'c');
     let drawer = document.getElementById('jpx-rowmin-strip');
 
     if (!entries.length || !home) {
@@ -257,8 +258,20 @@ function renderDrawer(entries, home) {
         chip.setAttribute('data-key', e.key);
 
         const thumb = document.createElement('span');
-        thumb.className = 'jpx-rowmin-thumb' + (e.poster ? '' : ' jpx-rowmin-thumb--fallback');
-        if (e.poster) thumb.style.backgroundImage = 'url("' + String(e.poster).replace(/"/g, '%22') + '")';
+        const pics = (e.posters && e.posters.length) ? e.posters.slice(0, 3) : [];
+        thumb.className = 'jpx-rowmin-thumb' + (pics.length ? '' : ' jpx-rowmin-thumb--fallback');
+        if (pics.length) {
+            pics.forEach((url, idx) => {
+                const ps = document.createElement('span');
+                ps.className = 'jpx-rowmin-poster jpx-rowmin-poster-' + idx;
+                ps.style.backgroundImage = 'url("' + String(url).replace(/"/g, '%22') + '")';
+                thumb.appendChild(ps);
+            });
+        } else {
+            const ps = document.createElement('span');
+            ps.className = 'jpx-rowmin-poster jpx-rowmin-poster-0';
+            thumb.appendChild(ps);
+        }
 
         const label = document.createElement('span');
         label.className = 'jpx-rowmin-chip-label';
@@ -300,23 +313,24 @@ function apply() {
     const keys = computeKeys(sections);
     const posters = loadPosters();
     let postersDirty = false;
-    const remember = (key, url) => { if (!url) return; if (!posters[sid]) posters[sid] = {}; if (posters[sid][key] !== url) { posters[sid][key] = url; postersDirty = true; } };
+    const remember = (key, arr) => { if (!arr || !arr.length) return; if (!posters[sid]) posters[sid] = {}; const cur = posters[sid][key]; const same = Array.isArray(cur) && cur.length === arr.length && cur.every((v, i) => v === arr[i]); if (!same) { posters[sid][key] = arr; postersDirty = true; } };
     const entries = [];
 
     sections.forEach((section, i) => {
         const key = keys[i];
         if (!key) return; // untitled section — no control, never minimized
         ensureButton(section, key);
-        const stored = (posters[sid] && posters[sid][key]) || null;
+        let stored = (posters[sid] && posters[sid][key]) || null;
+        if (typeof stored === 'string') stored = [stored]; // migrate old single-poster format
+        const hasStored = stored && stored.length;
         if (list.indexOf(key) !== -1) {
             section.classList.add(HIDDEN_CLASS);
-            let poster = stored;
-            if (!poster) { poster = posterFor(section); remember(key, poster); }
-            entries.push({ key: key, name: titleOf(section), poster: poster });
+            let pics = hasStored ? stored : null;
+            if (!pics) { pics = postersFor(section); if (pics.length) remember(key, pics); }
+            entries.push({ key: key, name: titleOf(section), posters: pics || [] });
         } else {
             section.classList.remove(HIDDEN_CLASS);
-            // remember this visible row's poster now (images are loaded while visible) so it survives reloads
-            if (!stored) remember(key, posterFor(section));
+            if (!hasStored) { const pics = postersFor(section); if (pics.length) remember(key, pics); }
         }
     });
 

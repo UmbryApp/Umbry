@@ -296,6 +296,75 @@ function openExtrasSheet() {
 let pill = null;
 let pillPoll = null;
 
+
+// Let the user drag the floating mini player out of the way. Pointer Events cover mouse + touch;
+// a small movement threshold keeps a tap = open. On release it snaps to the nearest side and the
+// top/bottom band, and the spot is remembered per device.
+function makePillDraggable(el) {
+    const KEY = 'jpx-mpill-pos';
+    let startX = 0, startY = 0, originLeft = 0, originTop = 0, dragging = false, moved = false, pid = null;
+    const applyPos = (left, top) => {
+        el.style.left = left + 'px'; el.style.top = top + 'px';
+        el.style.right = 'auto'; el.style.bottom = 'auto'; el.style.transform = 'none';
+    };
+    const clamp = (left, top) => {
+        const r = el.getBoundingClientRect();
+        const maxL = Math.max(8, window.innerWidth - r.width - 8);
+        const maxT = Math.max(8, window.innerHeight - r.height - 8);
+        return [Math.min(Math.max(8, left), maxL), Math.min(Math.max(8, top), maxT)];
+    };
+    const snap = (left, top) => {
+        const r = el.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const cx = left + r.width / 2;
+        let sl = (vw - r.width) / 2;
+        if (cx < vw * 0.34) sl = 8; else if (cx > vw * 0.66) sl = vw - r.width - 8;
+        let st = top;
+        if (top + r.height / 2 > vh * 0.5) st = vh - r.height - 16;
+        return clamp(sl, st);
+    };
+    const save = (left, top) => { try { localStorage.setItem(KEY, JSON.stringify({ left, top })); } catch (e) { /* ignore */ } };
+    const restore = () => {
+        try {
+            const p = JSON.parse(localStorage.getItem(KEY) || 'null');
+            if (p && typeof p.left === 'number') { const c = clamp(p.left, p.top); applyPos(c[0], c[1]); }
+        } catch (e) { /* ignore */ }
+    };
+    el.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button')) return;      // buttons keep working
+        dragging = true; moved = false; pid = e.pointerId;
+        const r = el.getBoundingClientRect();
+        originLeft = r.left; originTop = r.top; startX = e.clientX; startY = e.clientY;
+        try { el.setPointerCapture(pid); } catch (_e) { /* ignore */ }
+    });
+    el.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX, dy = e.clientY - startY;
+        if (!moved && Math.hypot(dx, dy) < 5) return; // tap threshold
+        moved = true; el.classList.add('jpx-dragging'); e.preventDefault();
+        const c = clamp(originLeft + dx, originTop + dy); applyPos(c[0], c[1]);
+    });
+    const end = () => {
+        if (!dragging) return;
+        dragging = false; el.classList.remove('jpx-dragging');
+        try { el.releasePointerCapture(pid); } catch (_e) { /* ignore */ }
+        if (moved) {
+            el.__dragged = true; setTimeout(() => { el.__dragged = false; }, 60);
+            const r = el.getBoundingClientRect();
+            const c = snap(r.left, r.top);
+            el.style.transition = 'left .18s ease, top .18s ease';
+            applyPos(c[0], c[1]); save(c[0], c[1]);
+            setTimeout(() => { el.style.transition = ''; }, 220);
+        }
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    window.addEventListener('resize', () => {
+        if (el.style.left) { const r = el.getBoundingClientRect(); const c = clamp(r.left, r.top); applyPos(c[0], c[1]); }
+    });
+    restore();
+}
+
 function showPill() {
     document.body.classList.add('jpx-music-active');
     if (pill) return;
@@ -309,11 +378,12 @@ function showPill() {
         + '<button type="button" class="jpx-mpill-next"><span class="material-icons" aria-hidden="true">skip_next</span></button>'
         + '<button type="button" class="jpx-mpill-stop"><span class="material-icons" aria-hidden="true">stop</span></button>';
     document.body.appendChild(pill);
-    pill.addEventListener('click', (e) => { if (!e.target.closest('button')) openJpxMusicPlayer(); });
+    pill.addEventListener('click', (e) => { if (pill.__dragged) return; if (!e.target.closest('button')) openJpxMusicPlayer(); });
     pill.querySelector('.jpx-mpill-prev').addEventListener('click', () => { try { playbackManager.previousTrack(player()); } catch (e) { /* ignore */ } });
     pill.querySelector('.jpx-mpill-play').addEventListener('click', () => { try { playbackManager.playPause(player()); } catch (e) { /* ignore */ } });
     pill.querySelector('.jpx-mpill-next').addEventListener('click', () => { try { playbackManager.nextTrack(player()); } catch (e) { /* ignore */ } });
     pill.querySelector('.jpx-mpill-stop').addEventListener('click', () => { jpxStopMusic(); });
+    makePillDraggable(pill); // jpx-mpill-drag-installed
     pillPoll = setInterval(refreshPill, 800);
     refreshPill();
 }

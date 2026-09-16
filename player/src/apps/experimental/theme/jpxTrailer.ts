@@ -129,7 +129,8 @@ export async function makeTrailerEl(api: TrailerApi, item: PreviewItem, classNam
                     loop: loop ? 1 : 0, playlist: vid
                 },
                 events: {
-                    onReady: (e: any) => { try { if (muted) e.target.mute(); e.target.playVideo(); } catch { /* ignore */ } coverFit(); setTimeout(coverFit, 300); },
+                    onReady: (e: any) => { try { if (muted) e.target.mute(); e.target.playVideo(); } catch { /* ignore */ }
+                        coverFit(); requestAnimationFrame(coverFit); setTimeout(coverFit, 300); setTimeout(coverFit, 1000); },
                     onStateChange: (e: any) => {
                         if (e.data === YT.PlayerState.PLAYING) {
                             coverFit();
