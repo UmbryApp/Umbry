@@ -2,7 +2,7 @@ import Drawer from '@mui/material/Drawer';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Slider from '@mui/material/Slider';
-import React, { useCallback, useEffect, useReducer, useState } from 'react';
+import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Dashboard from 'utils/dashboard';
@@ -11,7 +11,7 @@ import { ServerConnections } from 'lib/jellyfin-apiclient';
 import Events from 'utils/events';
 
 import JpxAppThemeDrawer from './JpxAppThemeDrawer';
-import { JPX_PANELS, type JpxPanel, type JpxRow } from './theme/jpxSettingsConfig';
+import { JPX_PANELS, type JpxOption, type JpxPanel, type JpxRow } from './theme/jpxSettingsConfig';
 import { getPref, setPref, subscribePrefs } from './theme/jpxPrefs';
 import * as userSettings from 'scripts/settings/userSettings';
 import appSettings from 'scripts/settings/appSettings';
@@ -67,26 +67,36 @@ function rowGet(row: JpxRow): unknown {
     if (row.store === 'userConfig') return ucGet(key, row.default);
     return getPref(key, row.default);
 }
+// Rows backed by userSettings/appSettings/server config don't fire jpxPrefs' subscription, so the
+// drawer must be told to redraw after writing them (otherwise the switch never visibly moves).
+let _redraw: (() => void) | null = null;
 function toBool(v: unknown): boolean { return v === true || v === 'true' || v === 1 || v === '1'; }
 function rowSet(row: JpxRow, v: unknown): void {
     const key = row.key || '';
     if (row.store === 'user') {
         try { const fn = (userSettings as unknown as Record<string, (v?: unknown) => unknown>)[key]; if (typeof fn === 'function') fn(v); } catch { /* ignore */ }
+        _redraw?.();
         return;
     }
     if (row.store === 'app') {
         try { appSettings.set(key, String(v)); } catch { /* ignore */ }
+        _redraw?.();
         return;
     }
     if (row.store === 'subApp') {
         try { const us = userSettings as unknown as { getSubtitleAppearanceSettings: () => Record<string, unknown>; setSubtitleAppearanceSettings: (o: Record<string, unknown>) => void }; const cur = us.getSubtitleAppearanceSettings(); cur[key] = v; us.setSubtitleAppearanceSettings(cur); } catch { /* ignore */ }
+        _redraw?.();
         return;
     }
-    if (row.store === 'userConfig') { ucSet(key, v); return; }
+    if (row.store === 'userConfig') { ucSet(key, v); _redraw?.(); return; }
     setPref(key, v);
 }
 import { promptPin } from './theme/jpxPinPrompt';
-import { logoutAccount } from './theme/jpxAccount';
+import { promptWalkthrough } from './theme/jpxWalkthrough';
+import { accountToken, getSyncMode, logoutAccount } from './theme/jpxAccount';
+import { promptConnectServer } from './theme/jpxServerConnect';
+import { promptJpxAccount } from './theme/jpxAccountPrompt';
+import { pullAndHydrate } from './theme/jpxCloud';
 import { promptLibrarySelect } from './theme/jpxLibrarySelect';
 import { promptHomeLibraries } from './theme/jpxHomeLibrariesPrompt';
 import { promptGenreSelect } from './theme/jpxGenreSelect';
@@ -108,6 +118,14 @@ interface JpxSettingsDrawerProps {
     isAdmin?: boolean;
 }
 
+// TV colour presets (Settings colour rows open these instead of the unsupported native picker).
+const TV_COLORS: JpxOption[] = [
+    { value: '#c235ff', label: 'Umbry Purple' }, { value: '#9385f5', label: 'Lavender' }, { value: '#ff9a4b', label: 'Ember Orange' },
+    { value: '#ff4d8d', label: 'Pink' }, { value: '#ff4d4d', label: 'Red' }, { value: '#ffd166', label: 'Yellow' },
+    { value: '#4cd97b', label: 'Green' }, { value: '#3ec5ff', label: 'Sky Blue' }, { value: '#ffffff', label: 'White' },
+    { value: '#000000', label: 'Black' }
+];
+
 const chev = (icon: string) => <span className='material-icons jpx-settings-chev' aria-hidden='true'>{icon}</span>;
 
 const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) => {
@@ -126,6 +144,9 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
     const isElectron = typeof window !== 'undefined' && !!(window as { umbry?: unknown }).umbry;
     // true inside the Android/Capacitor app (native WebView) — enables the mobile update check
     const isCapacitor = typeof window !== 'undefined' && !!(window as { Capacitor?: unknown }).Capacitor;
+    // signed in to an Umbry account (Umbry Server sync) vs "this device only"
+    const hasAccount = getSyncMode() === 'server' && !!accountToken();
+    const isAndroid = isCapacitor && (window as { Capacitor?: { getPlatform?: () => string } }).Capacitor?.getPlatform?.() === 'android';
     useEffect(() => {
         if (!open) return;
         let addr = '';
@@ -140,14 +161,40 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
     // Fresh open -> start at root. Re-render when any pref changes.
     useEffect(() => { if (open) setStack([ 'root' ]); }, [ open ]);
     useEffect(() => subscribePrefs(() => force()), []);
+    useEffect(() => { _redraw = force; return () => { if (_redraw === force) _redraw = null; }; }, []);
     useEffect(() => { if (open) { loadServerData().then(() => force()); } }, [ open ]);
 
     const panelId = stack[stack.length - 1];
     const panel: JpxPanel = JPX_PANELS[panelId] || JPX_PANELS.root;
     const canBack = stack.length > 1;
 
+    // TV: remember which row opened each sub-panel so Back lands on it again (not the first row).
+    const openers = useRef<string[]>([]);
+    const refocus = useRef<string | null>(null);
+    const isTv = typeof document !== 'undefined' && document.documentElement.classList.contains('jpx-tv');
     const push = useCallback((id: string) => setStack(s => [ ...s, id ]), []);
-    const back = useCallback(() => setStack(s => (s.length > 1 ? s.slice(0, -1) : s)), []);
+    const back = useCallback(() => {
+        refocus.current = openers.current.pop() || null;
+        setStack(s => (s.length > 1 ? s.slice(0, -1) : s));
+    }, []);
+    useEffect(() => { if (open) { openers.current = []; refocus.current = null; } }, [ open ]);
+    const focusRowTitled = useCallback((title: string | null) => {
+        if (!isTv || !title) return;
+        const tryFocus = (n: number) => {
+            const paper = [ ...document.querySelectorAll<HTMLElement>('.jpx-settings-paper') ].pop();
+            const row = paper && [ ...paper.querySelectorAll<HTMLElement>('.jpx-settings-row') ]
+                .find(r => r.querySelector('.jpx-settings-row-title')?.textContent === title);
+            if (row) { row.focus(); row.scrollIntoView({ block: 'nearest' }); } else if (n > 0) setTimeout(() => tryFocus(n - 1), 80);
+        };
+        setTimeout(() => tryFocus(6), 60);
+    }, [ isTv ]);
+    useEffect(() => {
+        // One list element is reused for every panel: a newly opened panel must start at the top instead
+        // of inheriting the parent's scroll (About scrolled down → Privacy Policy opened at its end).
+        const list = [ ...document.querySelectorAll<HTMLElement>('.jpx-settings-paper .jpx-settings-list') ].pop();
+        if (list) list.scrollTop = 0;
+        if (refocus.current) { focusRowTitled(refocus.current); refocus.current = null; }
+    }, [ stack, focusRowTitled ]);
 
     // While Kids Mode is on, opening Parental Controls or Administration requires the PIN, so a
     // child can't lift the restrictions. No PIN set (or mode off) -> open freely.
@@ -173,6 +220,40 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
                     if (!ok) break;
                 }
                 await promptRecoveryCode();
+                break;
+            }
+            case 'rate_app':
+                // Opens Umbry's Google Play listing (the Play app handles the https link on Android).
+                window.open('https://play.google.com/store/apps/details?id=org.umbry.player', '_blank');
+                break;
+            case 'share_app': {
+                const share = { title: 'Umbry', text: 'Umbry — one beautiful player for Jellyfin, Emby and Plex.', url: 'https://umbry.org' };
+                const capShare = (window as { Capacitor?: { Plugins?: { Share?: { share: (o: object) => Promise<unknown> } } } }).Capacitor?.Plugins?.Share;
+                // TV: there's no share sheet target on a TV — show the link as a QR code (window.open is the TV link dialog).
+                if (document.documentElement.classList.contains('jpx-tv')) { window.open(share.url, '_blank'); break; }
+                try {
+                    if (capShare) { await capShare.share({ ...share, dialogTitle: 'Share Umbry' }); break; }
+                    if (navigator.share) { await navigator.share(share); break; }
+                    await navigator.clipboard.writeText(share.url);
+                    toast('Link copied — umbry.org');
+                } catch (e) { /* share sheet dismissed */ }
+                break;
+            }
+            case 'show_walkthrough':
+                onClose();
+                await promptWalkthrough();
+                break;
+            case 'connect_umbry_server': {
+                // "this device only" → Umbry Server: pick a server, sign in / create the account, then
+                // merge this device's servers + settings into it (pullAndHydrate) and reload signed in.
+                const chosen = await promptConnectServer();
+                if (!chosen) break;
+                onClose();
+                await promptJpxAccount();
+                if (getSyncMode() === 'server' && accountToken()) {
+                    try { await pullAndHydrate(); } catch (e) { /* offline — the next change will sync */ }
+                }
+                window.location.reload();
                 break;
             }
             case 'account_sign_out': {
@@ -274,7 +355,7 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
             case 'nav':
                 if (row.panel) {
                     const panel = row.panel;
-                    enterPanelGuarded(panel).then(ok => { if (ok) push(panel); });
+                    enterPanelGuarded(panel).then(ok => { if (ok) { openers.current.push(row.title); push(panel); } });
                 }
                 break;
             case 'route':
@@ -296,11 +377,19 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
             case 'appTheme': setAppThemeOpen(true); break;
             case 'toggle': if (row.key) rowSet(row, !toBool(rowGet(row))); break;
             case 'select': setMenu({ anchor: el, row }); break;
-            case 'action': handleAction(row.action); break;
+            case 'color':
+                // TV: the WebView has no colour picker for <input type=color>, so offer presets in the same remote menu.
+                if (isTv) {
+                    const opts = [ ...(row.key === 'textBackground' ? [ { value: 'transparent', label: 'Transparent' } ] : []), ...TV_COLORS ];
+                    setMenu({ anchor: el, row: { ...row, type: 'select', options: opts } });
+                }
+                break;
+            // TV: when an action's dialog closes (drawer still open), land back on the row that opened it.
+            case 'action': void Promise.resolve(handleAction(row.action)).then(() => focusRowTitled(row.title)); break;
             case 'link': if (row.url) window.open(row.url, '_blank', 'noopener'); onClose(); break;
             default: break;
         }
-    }, [ navigate, onClose, push, enterPanelGuarded, handleAction ]);
+    }, [ navigate, onClose, push, enterPanelGuarded, handleAction, focusRowTitled ]);
 
     const control = (row: JpxRow) => {
         switch (row.type) {
@@ -422,6 +511,15 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
             if (ac && ac.serverId && ac.accessToken && ac.accessToken()) {
                 const sid = ac.serverId();
                 try { ac.logout(); } catch { /* server-side session end */ }
+                // Drop the IN-MEMORY session too. Clearing only the stored credentials left this client
+                // signed in in memory, so picking the server again "signed in" with the stale token,
+                // nothing was saved, and the post-login reload bounced back to the login screen.
+                try { if (typeof ac.setAuthenticationInfo === 'function') ac.setAuthenticationInfo(null, null); } catch { /* ignore */ }
+                try {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const sc0 = ServerConnections as any;
+                    sc0._apiClients = (sc0._apiClients || []).filter((c: any) => c !== ac);
+                } catch { /* ignore */ }
                 try {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const sc = ServerConnections as any;
@@ -436,15 +534,19 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
                 try { const jf = JSON.parse(localStorage.getItem('jpx-active-jf') || 'null'); if (jf && jf.id === sid) localStorage.removeItem('jpx-active-jf'); } catch { /* ignore */ }
                 try { (ServerConnections as { localApiClient?: unknown }).localApiClient = null; (window as { ApiClient?: unknown }).ApiClient = null; } catch { /* ignore */ }
                 try { Events.trigger(ServerConnections, 'localusersignedout', [ { serverId: sid } ]); } catch { /* ignore */ }
-                navigate('/selectserver');
+                // Restart on the server picker with a clean slate (no cached clients / query results).
+                try { window.location.hash = '#/selectserver'; } catch { /* ignore */ }
+                window.location.reload();
                 return;
             }
         } catch { /* ignore */ }
         Dashboard.logout();
     }, [ navigate, onClose ]);
 
+    // disableEnforceFocus: prompts opened from here (PIN pad / Forgot-PIN password) mount outside the
+    // drawer; MUI's focus trap would otherwise yank focus back and block typing in them.
     return (
-        <Drawer anchor='right' open={open} onClose={onClose} PaperProps={{ className: 'jpx-settings-paper' }}>
+        <Drawer anchor='right' open={open} onClose={onClose} disableEnforceFocus PaperProps={{ className: 'jpx-settings-paper' }}>
             <div className='jpx-settings-head'>
                 {canBack && (
                     <button type='button' className='jpx-settings-close' aria-label='Back' onClick={back}>
@@ -459,7 +561,7 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
 
             <div className='jpx-settings-list'>
                 {panel.sections.map((sec, si) => {
-                    const rows = sec.rows.filter(r => (!r.admin || (isAdmin && isJellyfinServer)) && (!r.electronOnly || isElectron) && (!r.nativeOnly || isElectron || isCapacitor));
+                    const rows = sec.rows.filter(r => (!r.admin || (isAdmin && isJellyfinServer)) && (!r.electronOnly || isElectron) && (!r.nativeOnly || isElectron || isCapacitor) && (!r.androidOnly || isAndroid) && (!r.accountOnly || hasAccount) && (!r.localOnly || !hasAccount) && (!r.tvHidden || !isTv));
                     if (!rows.length) return null; // don't render a header for a section whose rows are all hidden
                     return (
                         <React.Fragment key={si}>
@@ -472,13 +574,13 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
 
             {panelId === 'root' && (
                 <div className='jpx-settings-foot'>
-                    <button type='button' className='jpx-settings-row jpx-settings-syncnow' onClick={doSync} disabled={syncState === 'syncing'}>
+                    {hasAccount ? <button type='button' className='jpx-settings-row jpx-settings-syncnow' onClick={doSync} disabled={syncState === 'syncing'}>
                         <span className='jpx-settings-ico'><span className='material-icons' aria-hidden='true'>{syncState === 'done' ? 'cloud_done' : 'cloud_sync'}</span></span>
                         <span className='jpx-settings-text'>
                             <span className='jpx-settings-row-title'>{syncState === 'syncing' ? 'Syncing…' : syncState === 'done' ? 'Synced' : 'Sync now'}</span>
                             <span className='jpx-settings-row-sub'>Save servers &amp; settings to your account</span>
                         </span>
-                    </button>
+                    </button> : null}
                     <button type='button' className='jpx-settings-row jpx-settings-signout' onClick={doSignOut}>
                         <span className='jpx-settings-ico'><span className='material-icons' aria-hidden='true'>logout</span></span>
                         <span className='jpx-settings-text'><span className='jpx-settings-row-title'>Sign Out</span></span>
@@ -500,7 +602,7 @@ const JpxSettingsDrawer = ({ open, onClose, isAdmin }: JpxSettingsDrawerProps) =
 
             <JpxAppThemeDrawer
                 open={appThemeOpen}
-                onBack={() => setAppThemeOpen(false)}
+                onBack={() => { setAppThemeOpen(false); focusRowTitled('App Theme'); }}
                 onClose={() => { setAppThemeOpen(false); onClose(); }}
             />
         </Drawer>

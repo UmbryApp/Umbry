@@ -332,7 +332,7 @@ function cardHtml(ac, item) {
     // Real library items carry `.card` + data-id + the stock cardBox/cardImageContainer structure so
     // the global jpxCardMorph hover-expand applies (same effect as the other libraries). Discover
     // (Open Library) and author cards have no data-id, so the morph skips them.
-    return '<a class="card jpx-bh-card" data-id="' + esc(item.Id) + '" href="#/details?id=' + item.Id + '">'
+    return '<a class="card jpx-bh-card" data-id="' + esc(item.Id) + '" href="#/details?id=' + encodeURIComponent(item.Id) + '">'
         + '<span class="cardBox">'
         + '<span class="cardImageContainer jpx-bh-card-img"' + (url ? ' style="background-image:url(\'' + url.replace(/'/g, "%27") + '\')"' : '') + '>'
         + (url ? '' : '<span class="material-icons" aria-hidden="true">' + (isAudio ? 'headphones' : 'menu_book') + '</span>')
@@ -414,7 +414,7 @@ export function renderBooksHome(container) {
         if (res && slot) {
             const url = imgUrl(ac, res, 240);
             const pct = res.UserData && res.UserData.PlayedPercentage;
-            slot.outerHTML = '<a class="jpx-bh-hero" href="#/details?id=' + res.Id + '"'
+            slot.outerHTML = '<a class="jpx-bh-hero" href="#/details?id=' + encodeURIComponent(res.Id) + '"'
                 + (url ? ' style="--jpx-hero-cover:url(\'' + url.replace(/'/g, '%27') + '\')"' : '') + '>'
                 + '<div class="jpx-bh-hero-cover"' + (url ? ' style="background-image:url(\'' + url.replace(/'/g, '%27') + '\')"' : '') + '></div>'
                 + '<div class="jpx-bh-hero-body">'

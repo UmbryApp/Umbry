@@ -90,6 +90,8 @@ build: ${__JF_BUILD_VERSION__}`);
 
     // Load the translation dictionary
     await loadCoreDictionary();
+    // Umbry screens in the Display Language (the Apple app’s 10 languages)
+    try { await (await import("apps/experimental/theme/jpxI18n")).initJpxI18n(); } catch (e) { console.warn("[jpxI18n]", e); }
     // Update localization on user changes
     Events.on(ServerConnections, 'localusersignedin', globalize.updateCurrentCulture);
     Events.on(ServerConnections, 'localusersignedout', globalize.updateCurrentCulture);
@@ -173,7 +175,9 @@ async function loadPlugins() {
 }
 
 function loadPlatformFeatures() {
-    if (!browser.tv && !browser.xboxOne && !browser.ps4) {
+    // Umbry: the Android TV app gets the same music player as phones/desktop (it's initialised from
+    // the now-playing bar module), so load it there too.
+    if ((!browser.tv && !browser.xboxOne && !browser.ps4) || document.documentElement.classList.contains('jpx-tv')) {
         import('./components/nowPlayingBar/nowPlayingBar');
     }
 

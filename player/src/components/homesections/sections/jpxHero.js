@@ -49,7 +49,7 @@ function contentHtml(apiClient, item) {
         ? apiClient.getScaledImageUrl(item.Id, { type: 'Logo', maxWidth: LOGO_MAX_WIDTH, tag: logoTag })
         : null;
     const heading = logoUrl
-        ? '<img class="jpx-hero-logo" src="' + logoUrl + '" alt="' + esc(item.Name) + '" />'
+        ? '<img class="jpx-hero-logo" src="' + esc(logoUrl) + '" alt="' + esc(item.Name) + '" />'
         : '<h1 class="jpx-hero-title">' + esc(item.Name) + '</h1>';
     const overview = item.Overview
         ? '<p class="jpx-hero-overview">' + esc(item.Overview) + '</p>' : '';
@@ -155,8 +155,16 @@ export function loadJpxHero(elem, apiClient, user) {
             img.src = url;
 
             // swap content with a quick fade
+            // TV: the remote may be sitting on Play / More Info; rebuilding the content would drop that
+            // focus every rotation, so carry it over to the same button on the new slide.
+            const tvRefocus = document.documentElement.classList.contains('jpx-tv') && contentEl.contains(document.activeElement)
+                ? (document.activeElement.classList.contains('jpx-hero-info') ? '.jpx-hero-info' : '.jpx-hero-play') : null;
             contentEl.classList.remove('jpx-hero-content--in');
             contentEl.innerHTML = contentHtml(apiClient, item);
+            if (tvRefocus) {
+                const btn = contentEl.querySelector(tvRefocus);
+                if (btn) { btn.focus({ preventScroll: true }); (window.__jpxRingOn ? window.__jpxRingOn(btn) : btn.classList.add('jpx-sn-focus')); }
+            }
             // force reflow so the fade re-triggers
             void contentEl.offsetWidth;
             contentEl.classList.add('jpx-hero-content--in');

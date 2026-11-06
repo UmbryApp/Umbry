@@ -13,7 +13,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import {
     loginAccount, registerAccount, resetPassword,
     getSyncMode, setSyncMode, getServerUrl, setServerUrl, probeServer, detectLocalServer,
-    detectAllServers, addKnownServer, getProfilesFor, saveProfile, useProfile, removeProfile, type Profile
+    detectAllServers, detectFirstServer, addKnownServer, getProfilesFor, saveProfile, useProfile, removeProfile, type Profile
 } from './jpxAccount';
 import { AVATAR_PRESETS, renderAvatar, presetValue } from './jpxAvatars';
 import { hasPin } from './jpxParental';
@@ -21,6 +21,15 @@ import { promptPin } from './jpxPinPrompt';
 import jpxLogo from '../../../assets/img/umbry-wordmark.png';
 import jpxMark from '../../../assets/img/umbry-logo.png';
 import './jpxAccountPrompt.scss';
+
+// Android TV: don't open the on-screen keyboard the moment a screen appears (it covers half the TV).
+// Start focus on the main button instead; the keyboard opens when the user selects the text box.
+const IS_TV = typeof document !== 'undefined' && document.documentElement.classList.contains('jpx-tv');
+const IS_TOUCH = typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+// TV remotes can only reach focusable elements, and an <a> without href isn't one. (OK on it is
+// turned into a click by jpxSpatialNav.)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const tvLinkProps = (_fn: () => void) => (IS_TV ? { tabIndex: 0, role: 'button' } : {});
 
 type Mode = 'login' | 'register';
 type Step = 'profiles' | 'server' | 'auth' | 'avatar' | 'reset' | 'recovery';
@@ -73,6 +82,17 @@ function AccountScreen({ onDone }: { onDone: () => void }) {
             detectLocalServer().then(async found => {
                 if (cancelled) return;
                 if (found) { setServerUrlState(found); setDetected(true); setDetecting(false); return; }
+                // TV: fill in the first server found right away (the full scan is slow on TV hardware);
+                // the complete list still builds in the background for the dropdown.
+                if (document.documentElement.classList.contains('jpx-tv')) {
+                    try {
+                        const first = await detectFirstServer();
+                        if (cancelled) return;
+                        if (first) { setServerUrlState(String(first).replace(/^https?:\/\//, '')); setDetected(true); }
+                    } catch { /* ignore */ }
+                    if (!cancelled) setDetecting(false);
+                    return;
+                }
                 try {
                     const list = await detectAllServers();
                     if (cancelled) return;
@@ -209,7 +229,7 @@ function AccountScreen({ onDone }: { onDone: () => void }) {
                             <span className='jpx-account-profile-name'>Add account</span>
                         </button>
                     </div>
-                    <div className='jpx-account-switch'><a onClick={() => { setErr(''); setStep('server'); }}>‹ Use a different server</a></div>
+                    <div className='jpx-account-switch'><a onClick={() => { setErr(''); setStep('server'); }} {...tvLinkProps(() => { setErr(''); setStep('server'); })}>‹ Use a different server</a></div>
                 </div>
             ) : step === 'server' ? (
                 <form className={cardCls} onSubmit={connect}>
@@ -218,11 +238,11 @@ function AccountScreen({ onDone }: { onDone: () => void }) {
                     <div className='jpx-account-sub'>Enter the address of your Umbry Server to sync your servers and settings across devices.</div>
                     {err ? <div className='jpx-account-err'>{err}</div> : null}
                     <input className='jpx-account-input' type='text' inputMode='url' placeholder='e.g. 192.168.1.x:8790'
-                        value={serverUrl} onChange={e => { setServerUrlState(e.target.value); setDetected(false); }} autoFocus />
+                        value={serverUrl} onChange={e => { setServerUrlState(e.target.value); setDetected(false); }} autoFocus={!IS_TV && !IS_TOUCH} />
                     {detecting ? <div className='jpx-account-detect'>Looking for your Umbry Server…</div>
                         : detected ? <div className='jpx-account-detect jpx-account-detect--found'>✓ Found your Umbry Server — tap Connect</div> : null}
-                    <button type='submit' className='jpx-account-submit' disabled={connecting}>{connecting ? '…' : 'Connect'}</button>
-                    <div className='jpx-account-switch'><a onClick={useLocal}>Use this device only</a></div>
+                    <button type='submit' className='jpx-account-submit' disabled={connecting} autoFocus={IS_TV}>{connecting ? '…' : 'Connect'}</button>
+                    <div className='jpx-account-switch'><a onClick={useLocal} {...tvLinkProps(useLocal)}>Use this device only</a></div>
                 </form>
             ) : step === 'avatar' ? (
                 <div className={cardCls}>
@@ -242,7 +262,7 @@ function AccountScreen({ onDone }: { onDone: () => void }) {
                         </label>
                     </div>
                     <button type='button' className='jpx-account-submit' onClick={saveAndFinish}>Continue</button>
-                    <div className='jpx-account-switch'><a onClick={finish}>Skip — don’t save a profile</a></div>
+                    <div className='jpx-account-switch'><a onClick={finish} {...tvLinkProps(finish)}>Skip — don’t save a profile</a></div>
                 </div>
             ) : step === 'reset' ? (
                 <form className={cardCls} onSubmit={submitReset}>
@@ -255,7 +275,7 @@ function AccountScreen({ onDone }: { onDone: () => void }) {
                     <input className='jpx-account-input' type='password' placeholder='New password' value={pw} onChange={e => setPw(e.target.value)} autoComplete='new-password' required />
                     <input className='jpx-account-input' type='password' placeholder='Confirm new password' value={pw2} onChange={e => setPw2(e.target.value)} autoComplete='new-password' required />
                     <button type='submit' className='jpx-account-submit' disabled={busy}>{busy ? '…' : 'Reset password'}</button>
-                    <div className='jpx-account-switch'><a onClick={() => { setErr(''); setStep('auth'); }}>‹ Back to sign in</a></div>
+                    <div className='jpx-account-switch'><a onClick={() => { setErr(''); setStep('auth'); }} {...tvLinkProps(() => { setErr(''); setStep('auth'); })}>‹ Back to sign in</a></div>
                 </form>
             ) : step === 'recovery' ? (
                 <div className={cardCls}>
@@ -299,12 +319,12 @@ function AccountScreen({ onDone }: { onDone: () => void }) {
                                 <strong>New to Umbry?</strong> You’ll need an Umbry account to sign in — it’s created on your own Umbry Server (not on the internet) and keeps your settings in sync across devices. If you haven’t made one yet, create it below.
                             </div>
                             <button type='button' className='jpx-account-submit jpx-account-submit--secondary' onClick={() => swap('register')}>Create an account</button>
-                            <div className='jpx-account-switch'><a onClick={gotoReset}>Forgot password?</a></div>
+                            <div className='jpx-account-switch'><a onClick={gotoReset} {...tvLinkProps(gotoReset)}>Forgot password?</a></div>
                         </>
                     ) : (
                         <button type='button' className='jpx-account-submit jpx-account-submit--secondary' onClick={() => swap('login')}>Already have an account? Sign in</button>
                     )}
-                    <div className='jpx-account-switch'><a onClick={() => { setErr(''); setStep('server'); }}>‹ Change server</a></div>
+                    <div className='jpx-account-switch'><a onClick={() => { setErr(''); setStep('server'); }} {...tvLinkProps(() => { setErr(''); setStep('server'); })}>‹ Change server</a></div>
                 </form>
             )}
         </div>

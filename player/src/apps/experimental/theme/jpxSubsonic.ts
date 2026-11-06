@@ -80,7 +80,8 @@ export function removeSubsonicServer(id: string): void {
 function randomSalt(): string {
     let s = '';
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < 12; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
+    const bytes = crypto.getRandomValues(new Uint8Array(12));
+    for (let i = 0; i < 12; i++) s += chars.charAt(bytes[i] % chars.length);
     return s;
 }
 

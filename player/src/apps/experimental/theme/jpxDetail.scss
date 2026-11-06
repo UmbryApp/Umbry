@@ -1344,6 +1344,25 @@
     .jpx-person-page .jpx-detail-header.jpx-person { padding-top: 12vh; }
 }
 
+/* TV person page: the person's own photo as the backdrop — full height on the right, fading into the
+   page from the left and bottom so the name/bio/grid stay readable. */
+html.jpx-tv .jpx-dh-coll.jpx-person.jpx-person-bgphoto.jpx-detail-header::before {
+    background-color: #0b0b10 !important;
+    background-image:
+        linear-gradient(90deg, rgba(11, 11, 16, 1) 0%, rgba(11, 11, 16, 1) 63%, rgba(11, 11, 16, 0.6) 72%, rgba(11, 11, 16, 0.2) 86%, rgba(11, 11, 16, 0.05) 100%),
+        linear-gradient(0deg, rgba(11, 11, 16, 0.96) 0%, rgba(11, 11, 16, 0) 42%),
+        var(--jpx-tv-bd, none) !important;
+    background-size: cover, cover, auto 100% !important;
+    background-position: center, center, right top !important;
+    background-repeat: no-repeat, no-repeat, no-repeat !important;
+}
+/* TV: a normal-sized Favorite pill, not a bar across the whole screen. */
+html.jpx-tv .jpx-person-fav {
+    display: inline-flex;
+    width: auto;
+    padding: 0.7em 1.9em;
+}
+
 /* ===================== Studio / Genre grouping page — Moonfin style ===================== */
 .jpx-grouping-page.jpx-custom-detail #itemBackdrop { height: 0 !important; min-height: 0 !important; overflow: hidden !important; }
 /* No hero backdrop on a grouping page, so start the content near the top on every layout
@@ -1543,7 +1562,7 @@ body:has(.jpx-grouping-page) { background-color: #060512 !important; }
 .jpx-album-page .detailPagePrimaryContent .nameContainer { display: none !important; }
 .jpx-album-page .jpx-detail-header.jpx-album { text-align: left; }
 .jpx-album-page.jpx-album-nobd.jpx-custom-detail #itemBackdrop { height: 0 !important; min-height: 0 !important; overflow: hidden !important; }
-.jpx-album-page.jpx-album-nobd .jpx-detail-header.jpx-album { margin-top: 10vh !important; }
+.jpx-album-page.jpx-album-nobd .jpx-detail-header.jpx-album { margin-top: max(10vh, calc(env(safe-area-inset-top, 0px) + 5.5rem)) !important; }
 .jpx-alb-art {
     width: min(64vw, 300px);
     aspect-ratio: 1;

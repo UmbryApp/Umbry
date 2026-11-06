@@ -62,7 +62,7 @@ export function setPlexAccount(id: string, info: { avatar?: string; name?: strin
 }
 
 async function plexGet(base: string, token: string, path: string): Promise<Dict> {
-    const url = base + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'X-Plex-Token=' + encodeURIComponent(token);
+    const url = token ? base + path + (path.indexOf('?') >= 0 ? '&' : '?') + 'X-Plex-Token=' + encodeURIComponent(token) : base + path;
     const res = await fetch(url, { headers: { Accept: 'application/json' } });
     if (!res.ok) throw new Error('plex ' + res.status);
     const d = await res.json();
@@ -100,18 +100,15 @@ export async function addPlexServer(rawBase: string, token: string): Promise<Ple
     let base = rawBase.trim().replace(/\/+$/, '');
     if (!/^https?:\/\//.test(base)) base = 'http://' + base;
     try {
-        const identity = await plexGet(base, token, '/identity');
+        // /identity needs no token. The plex.tv account token is never sent to the typed address:
+        // plex.tv hands back this server's own access token, and only that one goes to the server.
+        const identity = await plexGet(base, '', '/identity');
         const machineId = String(identity.machineIdentifier || '');
         if (!machineId) return null;
 
-        // Pick the token that actually grants library access. Try the account token (owner path);
-        // if it's refused, fall back to the server-specific access token from plex.tv resources.
-        let useToken = token;
-        let accessOk = await plexHasAccess(base, useToken);
-        if (!accessOk) {
-            const at = await resolvePlexAccessToken(token, machineId);
-            if (at) { useToken = at; accessOk = await plexHasAccess(base, useToken); }
-        }
+        const useToken = await resolvePlexAccessToken(token, machineId);
+        if (!useToken) return null; // not a server this account can reach
+        const accessOk = await plexHasAccess(base, useToken);
         if (!accessOk) return null; // signed in, but this account has no access to this server
 
         let name = 'Plex';

@@ -1,0 +1,44 @@
+// Umbry on TV (html.jpx-tv, set in index.html). PARITY RULE: a TV gets the same Umbry experience as
+// PC and phone — trailers, frosted glass, ambient glow, all of it. Only add TV rules here for things a
+// TV needs in order to work (layout/fit, remote focus), never to strip features for performance;
+// fix memory/perf by making the feature cheaper without changing what the user sees.
+
+// Memory on 2 GB TVs: these blobs are ALREADY soft radial gradients; the extra filter blur on top
+// doesn't visibly change them but costs ~50 MB of GPU memory each group. TV only.
+html.jpx-tv #jpx-ambient span,
+html.jpx-tv .jpx-auth-blob { filter: none !important; }
+
+// Sign-in screens on TV: the on-screen keyboard bar takes the bottom of the screen, so keep the
+// logo compact and the form high enough to stay visible while typing. TV only.
+html.jpx-tv .jpx-login-logo { margin-top: 2vh !important; margin-bottom: 0.3em !important; }
+html.jpx-tv .jpx-login-logo img { width: 190px !important; }
+html.jpx-tv .jpx-login-mark,
+html.jpx-tv .jpx-ss-mark { width: 84px !important; height: 84px !important; margin-bottom: -16px !important; }
+
+// The TV composites the hero's trailer as its own layer, which escapes the rounded overflow clip
+// and leaves square corners showing. A clip-path clips every layer inside it. TV only.
+html.jpx-tv .jpx-hero { clip-path: inset(0 round 22px); }
+
+// A fully opaque video gets promoted to the TV's hardware video plane, which ignores the hero's rounded
+// clip and shows square white corners while a trailer plays. Any opacity below 1 keeps it composited
+// inside the page (and clipped). Not visible to the eye. TV only.
+html.jpx-tv .jpx-hero-trailer.jpx-hero-trailer--playing { animation: none; opacity: 0.99; transition: opacity 0.7s ease; }
+
+// The remote scrolls rows sideways; the page itself must never shift sideways on TV.
+html.jpx-tv, html.jpx-tv body { overflow-x: clip; }
+
+/* The hero is overflow:hidden with a 1.03-zoomed backdrop (9px of hidden overflow). The remote's
+   scrollIntoView on a hero button scrolled the hero itself, lifting the scrim/trailer and showing a strip
+   of raw artwork along its bottom edge. clip = same clipping, but never scrollable. */
+html.jpx-tv .jpx-hero { overflow: clip; }
+
+/* Live blur over a PLAYING hero trailer re-blurs the video under it every frame — on a TV that was the
+   biggest remaining render cost (trace: ~400 ms/s of GPU draw). While a trailer plays, the glass over it
+   uses a slightly deeper tint instead; everywhere else (and once the trailer stops) the blur is back. */
+html.jpx-tv body:has(.jpx-hero-trailer--playing) .jpx-nav-pill,
+html.jpx-tv .jpx-hero:has(.jpx-hero-trailer--playing) * {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+html.jpx-tv body:has(.jpx-hero-trailer--playing) .jpx-nav-pill { background-color: rgba(16, 14, 24, 0.78) !important; }
+html.jpx-tv .jpx-hero:has(.jpx-hero-trailer--playing) .jpx-hero-btn { background-color: rgba(16, 14, 24, 0.62) !important; }

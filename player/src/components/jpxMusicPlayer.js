@@ -42,7 +42,9 @@ function np() { try { return playbackManager.getPlayerState(player()).NowPlaying
 // after music stops, a leftover Emby session makes the NEXT video (hero Play) fail with a
 // generic fatal player error. Explicitly stop this session's server-side encodings on stop
 // so the next play on Emby starts clean. Harmless on Jellyfin/Plex (no-op if nothing lingers).
+let userStopped = false; // a real Stop press closes the music UI at once (no track-change grace)
 function jpxStopMusic() {
+    userStopped = true;
     // Plain stop (reverted the v0.8.6 stopActiveEncodings experiment: it did NOT fix the Emby
     // music->hero fatal error and it REGRESSED Jellyfin — movie audio played over a stale backdrop.
     // The real fix for the music->video transition is pending a real repro/diagnosis.)
@@ -378,7 +380,7 @@ function showPill() {
         + '<button type="button" class="jpx-mpill-next"><span class="material-icons" aria-hidden="true">skip_next</span></button>'
         + '<button type="button" class="jpx-mpill-stop"><span class="material-icons" aria-hidden="true">stop</span></button>';
     document.body.appendChild(pill);
-    pill.addEventListener('click', (e) => { if (pill.__dragged) return; if (!e.target.closest('button')) openJpxMusicPlayer(); });
+    pill.addEventListener('click', (e) => { if (!pill || pill.__dragged) return; if (!e.target.closest('button')) openJpxMusicPlayer(); }); // pill is null once Stop removed it
     pill.querySelector('.jpx-mpill-prev').addEventListener('click', () => { try { playbackManager.previousTrack(player()); } catch (e) { /* ignore */ } });
     pill.querySelector('.jpx-mpill-play').addEventListener('click', () => { try { playbackManager.playPause(player()); } catch (e) { /* ignore */ } });
     pill.querySelector('.jpx-mpill-next').addEventListener('click', () => { try { playbackManager.nextTrack(player()); } catch (e) { /* ignore */ } });
@@ -423,7 +425,13 @@ export function initJpxMusicMiniBar() {
     if (miniInit) return;
     miniInit = true;
     import('utils/events').then(({ default: Events }) => {
+        // A track change on the native (Android) audio player arrives as stop + start. Treat a stop as
+        // the end of the music session only if no new audio starts within a moment — otherwise the
+        // full player popped open again over whatever you were doing at every track change.
+        let stopTimer = null;
         Events.on(playbackManager, 'playbackstart', () => {
+            if (stopTimer) { clearTimeout(stopTimer); stopTimer = null; }
+            userStopped = false;
             const it = np();
             if (it && it.MediaType === 'Audio') {
                 showPill();
@@ -440,8 +448,12 @@ export function initJpxMusicMiniBar() {
                 destroy();
             }
         });
-        Events.on(playbackManager, 'playbackstop', () => { window.__jpxMpSession = false; });
-        Events.on(playbackManager, 'playbackstop', () => { hidePill(); destroy(); });
+        Events.on(playbackManager, 'playbackstop', () => {
+            const end = () => { stopTimer = null; window.__jpxMpSession = false; hidePill(); destroy(); };
+            if (stopTimer) clearTimeout(stopTimer);
+            if (userStopped) { userStopped = false; end(); return; }
+            stopTimer = setTimeout(end, 2500);
+        });
     }).catch(() => { /* ignore */ });
     // already playing when we loaded?
     const it = np();

@@ -33,7 +33,7 @@ document.addEventListener('click', (e: MouseEvent) => {
     const addr = apiClient.serverAddress();
     if (!token || !addr) return;
     const url = addr + '/Videos/' + itemId + '/stream?static=true&mediaSourceId='
-        + encodeURIComponent(itemId) + '&api_key=' + encodeURIComponent(token);
+        + encodeURIComponent(itemId) + '&api_key=' + encodeURIComponent(token) + '&ApiKey=' + encodeURIComponent(token);
     e.preventDefault();
     e.stopPropagation();
     try { nv.play({ url: url, title: '', startPositionMs: 0 }); } catch { /* ignore */ }

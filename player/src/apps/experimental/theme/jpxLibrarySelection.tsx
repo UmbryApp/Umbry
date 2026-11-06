@@ -154,6 +154,8 @@ async function maybePrompt(): Promise<void> {
             getCurrentUserId: () => string;
         } | undefined;
         if (!ac || typeof ac.getCurrentUserId !== 'function') return;
+        const uid = ac.getCurrentUserId();
+        if (!uid) return;                           // not signed in yet: /Users/null/Views just 401s
         // Key by the CURRENT apiClient (matches the filter) — activeServerId() is Plex-first and would
         // fire the Plex picker while switching to a Jellyfin/Emby server whose session isn't active yet.
         const sid = serverKeyForClient(ac);
@@ -161,7 +163,7 @@ async function maybePrompt(): Promise<void> {
         if (hasSelectionFor(sid)) return;           // already chosen for this server
         if (inFlight.has(sid)) return;              // modal already open for it
         // Only prompt once the server actually has libraries (avoids an empty pre-login prompt).
-        const res = await withRawViews(() => ac.getUserViews({}, ac.getCurrentUserId()));
+        const res = await withRawViews(() => ac.getUserViews({}, uid));
         const items = (res?.Items || []) as unknown[];
         if (!items.length) return;
         // Re-check after the await (server may have switched, or a selection just saved).

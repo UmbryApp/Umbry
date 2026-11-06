@@ -74,7 +74,7 @@ export async function makeTrailerEl(api: TrailerApi, item: PreviewItem, classNam
             const locals = await api.getLocalTrailers(api.getCurrentUserId(), item.Id);
             const t = locals && locals[0];
             if (t && t.Id) {
-                const url = api.getUrl('Videos/' + t.Id + '/stream.mp4', { Static: true, api_key: api.accessToken() });
+                const url = api.getUrl('Videos/' + t.Id + '/stream.mp4', { Static: true, api_key: api.accessToken(), ApiKey: api.accessToken() });
                 const v = document.createElement('video');
                 v.className = className;
                 v.src = url;
@@ -106,10 +106,16 @@ export async function makeTrailerEl(api: TrailerApi, item: PreviewItem, classNam
             if (!w || !h) return;
             let iw: number, ih: number;
             if (w / h > 16 / 9) { iw = w; ih = w * 9 / 16; } else { ih = h; iw = h * 16 / 9; }
+            // TV only: YouTube picks its stream quality from the player's on-screen size, so a full-width
+            // TV hero gets 1080p, and a 2 GB TV runs out of memory when the hero moves on to the next
+            // trailer. Lay the player out at 1/2.5 size (the TV WebView runs at dpr 2) and scale it up to cover,
+            // so YouTube serves 720p or less: plenty for a background preview. Other devices are untouched (scale 1).
+            const s = document.documentElement.classList.contains('jpx-tv') ? 2.5 : 1;
+            if (s !== 1) { iframe.style.transformOrigin = '0 0'; iframe.style.transform = 'scale(' + s + ')'; }
             iframe.style.position = 'absolute';
             iframe.style.inset = 'auto';
-            iframe.style.width = Math.ceil(iw) + 'px';
-            iframe.style.height = Math.ceil(ih) + 'px';
+            iframe.style.width = Math.ceil(iw / s) + 'px';
+            iframe.style.height = Math.ceil(ih / s) + 'px';
             iframe.style.left = Math.round((w - iw) / 2) + 'px';
             iframe.style.top = Math.round((h - ih) / 2) + 'px';
             iframe.style.maxWidth = 'none';
@@ -121,6 +127,8 @@ export async function makeTrailerEl(api: TrailerApi, item: PreviewItem, classNam
             if (!YT || !YT.Player) return null;
             // eslint-disable-next-line no-new
             let revealed = false;
+            let rehideTimer = 0;
+            const tvRehide = document.documentElement.classList.contains('jpx-tv');
             new YT.Player(target, {
                 width: '100%', height: '100%', videoId: vid,
                 playerVars: {
@@ -134,13 +142,25 @@ export async function makeTrailerEl(api: TrailerApi, item: PreviewItem, classNam
                     onStateChange: (e: any) => {
                         if (e.data === YT.PlayerState.PLAYING) {
                             coverFit();
-                            if (revealed) return;
+                            if (revealed) {
+                                // TV: re-show after a stall only once YouTube's control overlay has faded again.
+                                if (tvRehide && !wrap.classList.contains(playingClass)) {
+                                    clearTimeout(rehideTimer);
+                                    rehideTimer = window.setTimeout(() => wrap.classList.add(playingClass), YT_REVEAL_DELAY_MS);
+                                }
+                                return;
+                            }
                             revealed = true;
                             // Reveal only after YouTube's initial control overlay has auto-hidden.
                             setTimeout(() => {
                                 wrap.classList.add(playingClass);
                                 try { opts.onPlaying?.(); } catch { /* ignore */ }
                             }, YT_REVEAL_DELAY_MS);
+                        } else if (tvRehide && revealed && (e.data === YT.PlayerState.BUFFERING || e.data === YT.PlayerState.PAUSED)) {
+                            // TV: a buffering/paused YouTube frame shows its own play/pause chrome over the hero -
+                            // fall back to the backdrop until it is really playing again.
+                            clearTimeout(rehideTimer);
+                            wrap.classList.remove(playingClass);
                         } else if (e.data === YT.PlayerState.ENDED) {
                             if (loop) { try { e.target.seekTo(0); e.target.playVideo(); } catch { /* ignore */ } }
                             else { try { opts.onEnded?.(); } catch { /* ignore */ } }

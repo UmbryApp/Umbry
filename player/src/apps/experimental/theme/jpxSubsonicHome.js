@@ -12,6 +12,10 @@ function activeServer() {
     let id = null; try { id = localStorage.getItem(ACTIVE); } catch (e) { /* ignore */ }
     return getSubsonicServer(id) || list[0];
 }
+// Server-supplied strings (tags, album names, error text) are escaped before going into innerHTML.
+function esc(v) {
+    return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 function setActive(id) { try { localStorage.setItem(ACTIVE, id); } catch (e) { /* ignore */ } }
 
 function injectStyles() {
@@ -126,7 +130,7 @@ async function showAlbum(container, srv, album) {
         const list = overlay.querySelector('.list'); list.innerHTML = '';
         songs.forEach((s, i) => {
             const row = document.createElement('div'); row.className = 'jpx-ss-row';
-            row.innerHTML = `<div class="num">${s.IndexNumber || i + 1}</div><div class="nm">${s.Name}</div><div class="dur">${fmt((s.RunTimeTicks || 0) / 10000000)}</div>`;
+            row.innerHTML = `<div class="num">${esc(s.IndexNumber || i + 1)}</div><div class="nm">${esc(s.Name)}</div><div class="dur">${fmt((s.RunTimeTicks || 0) / 10000000)}</div>`;
             row.onclick = () => jpxSubsonicPlayQueue(srv, songs, i);
             list.appendChild(row);
         });
@@ -137,7 +141,7 @@ async function renderBrowse(container, srv) {
     srvRef = srv;
     container.innerHTML = `
       <div class="jpx-ss">
-        <div class="jpx-ss-head"><h1>${srv.name}</h1><span class="kind">${(srv.kind || 'subsonic')}</span></div>
+        <div class="jpx-ss-head"><h1>${esc(srv.name)}</h1><span class="kind">${esc(srv.kind || 'subsonic')}</span></div>
         <div class="jpx-ss-tabs">
           <div class="jpx-ss-tab active" data-t="newest">Recently Added</div>
           <div class="jpx-ss-tab" data-t="frequent">Most Played</div>
@@ -154,13 +158,13 @@ async function renderBrowse(container, srv) {
             grid.innerHTML = '';
             albums.forEach(al => {
                 const card = document.createElement('div'); card.className = 'jpx-ss-card';
-                const cover = al.__subCover ? `<img loading="lazy" src="${coverArtUrl(srv, al.__subCover, 300)}" alt="">` : '';
-                card.innerHTML = `<div class="jpx-ss-cover">${cover}</div><div class="jpx-ss-title">${al.Name}</div><div class="jpx-ss-sub">${al.AlbumArtist || ''}</div>`;
+                const cover = al.__subCover ? `<img loading="lazy" src="${esc(coverArtUrl(srv, al.__subCover, 300))}" alt="">` : '';
+                card.innerHTML = `<div class="jpx-ss-cover">${cover}</div><div class="jpx-ss-title">${esc(al.Name)}</div><div class="jpx-ss-sub">${esc(al.AlbumArtist)}</div>`;
                 card.onclick = () => showAlbum(container, srv, al);
                 grid.appendChild(card);
             });
             window.__jpxSubAlbums = albums.length; // for verification
-        } catch (e) { grid.innerHTML = 'Failed to load: ' + e.message; }
+        } catch (e) { grid.textContent = 'Failed to load: ' + e.message; }
     }
     container.querySelectorAll('.jpx-ss-tab').forEach(t => t.onclick = () => {
         container.querySelectorAll('.jpx-ss-tab').forEach(x => x.classList.remove('active'));

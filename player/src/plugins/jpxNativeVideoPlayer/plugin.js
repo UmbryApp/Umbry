@@ -4,6 +4,11 @@ import { ServerConnections } from 'lib/jellyfin-apiclient';
 import { appHost } from '../../components/apphost';
 import profileBuilder from '../../scripts/browserDeviceProfile';
 import Events from '../../utils/events.ts';
+import { playbackManager } from '../../components/playback/playbackmanager';
+import { appRouter } from '../../components/router/appRouter';
+import { currentSettings as userSettings } from '../../scripts/settings/userSettings';
+import inputManager from '../../scripts/inputManager';
+import { jpxT } from '../../apps/experimental/theme/jpxI18n';
 
 // Umbry native video player.
 //
@@ -78,7 +83,11 @@ function buildNativeProfile(caps) {
             { Format: 'srt', Method: 'Embed' }, { Format: 'subrip', Method: 'Embed' },
             { Format: 'ass', Method: 'Embed' }, { Format: 'ssa', Method: 'Embed' },
             { Format: 'pgssub', Method: 'Embed' }, { Format: 'dvdsub', Method: 'Embed' },
-            { Format: 'vtt', Method: 'Embed' }, { Format: 'sub', Method: 'Embed' }
+            { Format: 'vtt', Method: 'Embed' }, { Format: 'sub', Method: 'Embed' },
+            // Separate subtitle files (and text subs while transcoding) come as side files the
+            // native player loads only when picked.
+            { Format: 'vtt', Method: 'External' }, { Format: 'srt', Method: 'External' },
+            { Format: 'subrip', Method: 'External' }, { Format: 'ass', Method: 'External' }, { Format: 'ssa', Method: 'External' }
         ],
         ResponseProfiles: []
     };
@@ -123,6 +132,10 @@ export class JpxNativeVideoPlayer {
         };
         add('playing', () => {
             this._paused = false;
+            if (!this._started) {
+                this._applyStartSubtitle();
+                setTimeout(() => { if (!this._pushUpNext()) setTimeout(() => this._pushUpNext(), 4000); }, 1500);
+            }
             markStarted();
             Events.trigger(this, 'playing');
             Events.trigger(this, 'unpause');
@@ -140,7 +153,7 @@ export class JpxNativeVideoPlayer {
             this._finishStopped();
         });
         add('error', (d) => {
-            Events.trigger(this, 'error', [{ type: 'mediadecodeerror', message: d && d.message }]);
+            Events.trigger(this, 'error', [{ type: /source|http|response code|network|unable to connect|timeout/i.test(String(d && d.message || '')) ? 'NETWORK_ERROR' : 'MEDIA_DECODE_ERROR', message: d && d.message }]);
             if (!this._started && this._rejectStart) {
                 const rej = this._rejectStart;
                 this._rejectStart = null; this._resolveStart = null;
@@ -150,10 +163,27 @@ export class JpxNativeVideoPlayer {
         });
         // The user closed the native player (back button) -> treat as a stop so playbackManager saves
         // the resume position and runs its stop reporting.
+        // Umbry controls: what the person picked in the native player's menus.
+        add('osd', (d) => { this._onOsd(d || {}); });
         add('dismiss', (d) => {
             if (d && typeof d.positionMs === 'number') { this._currentTimeMs = d.positionMs; }
+            // A user close is a stop, not an end: without this playbackManager auto-plays the next
+            // queued item (Back on an episode started the next episode).
+            if (!this._stopped) playbackManager._playNextAfterEnded = false;
             this._finishStopped();
         });
+    }
+
+    // The subtitle playbackManager chose (Settings → Subtitles, or the Detail page pick) for a track the
+    // player shows itself; burned-in / transcoded ones are already in the picture.
+    _applyStartSubtitle() {
+        const o = this._playOptions || {};
+        const ms = o.mediaSource || {};
+        const idx = (o.subtitleStreamIndex != null) ? o.subtitleStreamIndex : ms.DefaultSubtitleStreamIndex;
+        const s = idx != null && idx >= 0 ? this._streams('Subtitle').find(x => x.Index === idx) : null;
+        const own = s && (s.DeliveryMethod === 'External' || s.IsExternal || (s.DeliveryMethod === 'Embed' && o.playMethod !== 'Transcode'));
+        if (own) this.setSubtitleStreamIndex(idx);
+        else if (!s && o.playMethod !== 'Transcode') { const nv = nativeVideo(); try { if (nv) nv.selectTrack({ type: 'text', ordinal: -1 }); } catch (e) { /* ignore */ } }
     }
 
     _detachNativeListeners() {
@@ -185,7 +215,10 @@ export class JpxNativeVideoPlayer {
     // it to any segment request that lacks it. Harmless for direct-play (single authed file).
     _streamToken(options) {
         try {
-            const m = String(options.url || '').match(/[?&](api_key=[^&]+|X-Plex-Token=[^&]+|X-Emby-Token=[^&]+)/i);
+            const m = String(options.url || '').match(/[?&](api_key=[^&]+|ApiKey=[^&]+|X-Plex-Token=[^&]+|X-Emby-Token=[^&]+)/i);
+            // Jellyfin/Emby token: pass both names on (Emby needs api_key, Jellyfin 12 ApiKey) so the
+            // native player's extra requests (e.g. subtitles) authenticate on either server.
+            if (m && /^(api_key|apikey)=/i.test(m[1])) { const t = m[1].slice(m[1].indexOf('=') + 1); return 'api_key=' + t + '&ApiKey=' + t; }
             if (m) return m[1];
         } catch (e) { /* ignore */ }
         return '';
@@ -270,6 +303,19 @@ export class JpxNativeVideoPlayer {
         const nv = nativeVideo();
         if (!nv) { throw new Error('NativeVideo plugin unavailable'); }
 
+        // Jellyfin 12 transcode / HLS URLs carry no token (the web player sends it as a header, which a
+        // native player can't). Add it under both names (Emby: api_key, Jellyfin 12: ApiKey) so the stream
+        // and its segments authenticate (else 401 on every transcode).
+        try {
+            const it0 = options.item || {};
+            const api0 = it0.ServerId ? ServerConnections.getApiClient(it0.ServerId) : null;
+            const u0 = String(options.url || '');
+            if (api0 && api0.accessToken && api0.accessToken() && /^https?:/i.test(u0) && !/[?&](api_key|ApiKey|X-Plex-Token|X-Emby-Token)=/i.test(u0)
+                && u0.toLowerCase().indexOf(String(api0.serverAddress() || '').toLowerCase()) === 0) {
+                const t0 = api0.accessToken();
+                options.url = u0 + (u0.indexOf('?') >= 0 ? '&' : '?') + 'api_key=' + encodeURIComponent(t0) + '&ApiKey=' + encodeURIComponent(t0);
+            }
+        } catch (e) { /* keep the URL */ }
         this._playOptions = options;
         this._url = options.url;
         this._started = false;
@@ -278,7 +324,13 @@ export class JpxNativeVideoPlayer {
 
         // Resume: for Transcode the server already starts the stream at the resume offset
         // (transcodingOffsetTicks), so start the native player at 0; for direct play/stream we seek.
-        const startMs = options.playMethod === 'Transcode'
+        // Audio (music, audiobooks) comes as a universal stream URL marked Transcode, but servers usually
+        // send the original file and ignore its StartTimeTicks, so audiobooks restarted from 0. For audio
+        // the native player seeks to the resume point itself and the URL asks for the start of the file
+        // (a server that does transcode then can't apply the offset a second time).
+        const isAudioReq = String((options.item && options.item.MediaType) || options.mediaType || '').toLowerCase() === 'audio';
+        if (isAudioReq && options.url) { options.url = String(options.url).replace(/([?&]StartTimeTicks=)\d+/i, '$10'); this._url = options.url; }
+        const startMs = (options.playMethod === 'Transcode' && !isAudioReq)
             ? 0
             : Math.floor((options.playerStartPositionTicks || 0) / 10000);
         this._currentTimeMs = startMs;
@@ -312,6 +364,7 @@ export class JpxNativeVideoPlayer {
                     queryToken: queryToken || ''
                 });
             } else {
+                this._osdCache = null;
                 nv.play({
                     url: options.url,
                     startPositionMs: startMs,
@@ -319,8 +372,11 @@ export class JpxNativeVideoPlayer {
                     subtitle: this._subtitle(options),
                     artworkUrl: this._artwork(options),
                     subtitles: subtitles,
-                    queryToken: queryToken || ''
+                    queryToken: queryToken || '',
+                    osd: this._osdState(options)
                 });
+                // People, the next episode and the autoplay setting need server calls: send them when ready.
+                this._osdEnrich(options);
             }
         } catch (e) {
             this._finishStopped();
@@ -402,12 +458,260 @@ export class JpxNativeVideoPlayer {
     }
 
     supportsPlayMethod() { return true; }
-    canSetAudioStreamIndex() { return false; }
 
-    // Track switching that needs a re-transcode arrives as a fresh play() with a new options.url; the
-    // native player's own controller handles picking among the tracks already in the stream.
-    setSubtitleStreamIndex() { /* handled natively / via new play() */ }
-    setAudioStreamIndex() { /* handled via new play() for transcode */ }
+    // Direct play/stream: the file carries every audio track, so the native player switches itself.
+    // A transcode carries one, so playbackManager re-requests the stream (a fresh play()).
+    canSetAudioStreamIndex() {
+        return !!(this._playOptions && this._playOptions.playMethod !== 'Transcode');
+    }
+
+    _streams(type) {
+        const ms = (this._playOptions && this._playOptions.mediaSource) || {};
+        return (ms.MediaStreams || []).filter(s => s.Type === type);
+    }
+
+    setAudioStreamIndex(index) {
+        const nv = nativeVideo();
+        const list = this._streams('Audio').filter(s => !s.IsExternal);
+        const ord = list.findIndex(s => s.Index === index);
+        if (nv && nv.selectTrack && ord >= 0) { try { nv.selectTrack({ type: 'audio', ordinal: ord }); } catch (e) { /* ignore */ } }
+        this._pushOsd({ audioIndex: index });
+    }
+
+    // playbackManager calls this with -1 (off) or a track the player shows itself: one inside the file
+    // (direct play) or a separate subtitle file (External delivery).
+    setSubtitleStreamIndex(index) {
+        const nv = nativeVideo();
+        if (!nv) return;
+        if (index == null || index < 0) {
+            try { nv.selectTrack({ type: 'text', ordinal: -1 }); } catch (e) { /* ignore */ }
+            this._pushOsd({ subtitleIndex: -1 });
+            return;
+        }
+        const s = this._streams('Subtitle').find(x => x.Index === index);
+        if (!s) return;
+        if (s.DeliveryMethod === 'External' || s.IsExternal) {
+            const item = (this._playOptions && this._playOptions.item) || {};
+            const api = item.ServerId ? ServerConnections.getApiClient(item.ServerId) : ServerConnections.currentApiClient();
+            let url = s.DeliveryUrl || '';
+            if (url && !/^https?:/i.test(url) && api) url = api.getUrl(url.replace(/^\//, ''));
+            if (url && api && !/[?&](api_key|ApiKey)=/i.test(url)) url += (url.indexOf('?') >= 0 ? '&' : '?') + 'api_key=' + api.accessToken() + '&ApiKey=' + api.accessToken();
+            try { nv.setExternalSubtitle({ url, format: (s.Codec || url.split('?')[0].split('.').pop() || ''), lang: s.Language || '', label: s.DisplayTitle || '' }); } catch (e) { /* ignore */ }
+        } else {
+            const ord = this._streams('Subtitle').filter(x => !x.IsExternal && x.DeliveryMethod !== 'External').findIndex(x => x.Index === index);
+            try { nv.selectTrack({ type: 'text', ordinal: ord }); } catch (e) { /* ignore */ }
+        }
+        this._pushOsd({ subtitleIndex: index });
+    }
+
+    // ===== Umbry controls (native UmbryOsd): state in, picks out =====
+
+    _labels() {
+        const keys = ['Back', 'Play', 'Pause', 'Previous', 'Rewind', 'Fast forward', 'Mute', 'More', 'Picture in picture',
+            'Favorite', 'Playback speed', 'Chapters', 'Subtitle Track', 'Audio Track', 'Cast & Crew', 'Bitrate',
+            'Aspect ratio', 'Rotation lock', 'Playback Information', 'Cancel', 'Close', 'Off', 'Auto', 'Cover', 'Fill',
+            'No chapters.', 'No cast information.', 'None available', 'Ends at %s', 'Next Episode', 'Next Video',
+            '%1$s playing in %2$s seconds', 'Start Now', 'Hide'];
+        const out = {};
+        keys.forEach(k => { out[k] = jpxT(k); });
+        return out;
+    }
+
+    _accent() {
+        try {
+            const v = getComputedStyle(document.documentElement).getPropertyValue('--jpx-t-accent').trim()
+                || getComputedStyle(document.documentElement).getPropertyValue('--jpx-accent').trim();
+            if (/^#[0-9a-f]{6}$/i.test(v)) return v;
+            const m = v.match(/rgba?\((\d+)[ ,]+(\d+)[ ,]+(\d+)/i);
+            if (m) return '#' + [m[1], m[2], m[3]].map(x => ('0' + parseInt(x, 10).toString(16)).slice(-2)).join('');
+        } catch (e) { /* default */ }
+        return '#9385F5';
+    }
+
+    _pref(k, d) {
+        try { const v = localStorage.getItem('jpx-pref-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; }
+    }
+
+    _osdState(options) {
+        const item = options.item || {};
+        const ms = options.mediaSource || {};
+        let api = null;
+        try { api = item.ServerId ? ServerConnections.getApiClient(item.ServerId) : null; } catch (e) { api = null; }
+        const isPlex = !!(item.__plex || /^plex/i.test(String(item.ServerId || '')));
+        let logoUrl = '';
+        try {
+            if (api && item.ImageTags && item.ImageTags.Logo) logoUrl = api.getScaledImageUrl(item.Id, { type: 'Logo', maxWidth: 500, tag: item.ImageTags.Logo });
+            else if (api && item.ParentLogoItemId && item.ParentLogoImageTag) logoUrl = api.getScaledImageUrl(item.ParentLogoItemId, { type: 'Logo', maxWidth: 500, tag: item.ParentLogoImageTag });
+        } catch (e) { logoUrl = ''; }
+        const audio = this._streams('Audio').map((t, n) => ({
+            index: t.Index,
+            title: (n + 1) + ' - ' + (t.DisplayTitle || t.Language || ('Track ' + (n + 1))),
+            sub: [t.Language, (t.Codec || '').toUpperCase(), t.Channels ? t.Channels + 'ch' : ''].filter(Boolean).join(' · ')
+        }));
+        const subtitles = this._streams('Subtitle').map((t, n) => {
+            const lang = t.DisplayLanguage || t.Language || t.Title || 'Unknown';
+            const codec = (t.Codec || '').toUpperCase();
+            return { index: t.Index, title: (n + 1) + ' - ' + lang + (codec ? ' (' + codec + ')' : ''), sub: [codec, t.IsExternal ? 'External' : 'Embedded'].filter(Boolean).join(' · ') };
+        });
+        const curA = (options.audioStreamIndex != null) ? options.audioStreamIndex : ms.DefaultAudioStreamIndex;
+        const curS = (options.subtitleStreamIndex != null) ? options.subtitleStreamIndex : ms.DefaultSubtitleStreamIndex;
+        const chapters = (item.Chapters || []).map((c, i) => ({ name: c.Name || ('Chapter ' + (i + 1)), ms: Math.round((c.StartPositionTicks || 0) / 10000) }));
+        const v = (ms.MediaStreams || []).find(x => x.Type === 'Video');
+        const fps = v && (v.RealFrameRate || v.AverageFrameRate);
+        const info = [
+            { group: jpxT('Playback') },
+            { k: jpxT('File Name'), v: ms.Path ? String(ms.Path).split(/[\\/]/).pop() : (item.Name || '') },
+            { k: jpxT('Play Method'), v: options.playMethod === 'DirectPlay' ? jpxT('Direct Play') : (options.playMethod === 'DirectStream' ? jpxT('Direct Stream') : jpxT(options.playMethod || '')) },
+            { k: jpxT('Player'), v: 'Umbry Native Player' },
+            { k: jpxT('Container'), v: ms.Container ? String(ms.Container).toUpperCase() : '' },
+            { k: jpxT('Bitrate'), v: ms.Bitrate ? (ms.Bitrate / 1000000).toFixed(1) + ' Mbps' : '' }
+        ];
+        if (v) {
+            info.push({ group: jpxT('Video') });
+            info.push({ k: jpxT('Resolution'), v: v.Width && v.Height ? v.Width + '×' + v.Height + (fps ? ' @ ' + Math.round(fps) + 'fps' : '') : '@resolution' });
+            info.push({ k: jpxT('Codec'), v: v.Codec ? String(v.Codec).toUpperCase() : '' });
+            info.push({ k: jpxT('Range'), v: v.VideoRange || '' });
+        }
+        let bitrate = 'auto';
+        try { bitrate = localStorage.getItem('jpx-osd-bitrate') || 'auto'; } catch (e) { /* ignore */ }
+        const pbt = {};
+        ['above', 'below'].forEach(w => ['left', 'center', 'right'].forEach(sl => {
+            const def = { above_right: 'endsat', below_left: 'elapsed', below_right: 'duration' }[w + '_' + sl] || 'none';
+            pbt[w + '_' + sl] = this._pref('pbt_' + w + '_' + sl, def);
+        }));
+        const st = {
+            title: item.Name || options.title || '',
+            logoUrl,
+            itemId: item.Id || '',
+            serverId: item.ServerId || '',
+            supportsFavorites: !isPlex,
+            isFavorite: !!(item.UserData && item.UserData.IsFavorite),
+            isEpisode: item.Type === 'Episode',
+            isTv: document.documentElement.classList.contains('jpx-tv'),
+            isLocal: /^(file|content):/i.test(String(options.url || '')),
+            accent: this._accent(),
+            skipBack: userSettings.skipBackLength(),
+            skipFwd: userSettings.skipForwardLength(),
+            upNextEnabled: userSettings.enableNextVideoInfoOverlay(),
+            autoplay: true,
+            pbt,
+            buttons: this._pref('osdButtons', null) || {},
+            labels: this._labels(),
+            audio,
+            subtitles,
+            audioIndex: curA == null ? -1 : curA,
+            subtitleIndex: curS == null ? -1 : curS,
+            chapters,
+            people: this._people(item, api),
+            info,
+            bitrate
+        };
+        this._osdCache = st;
+        return st;
+    }
+
+    _people(item, api) {
+        return (item.People || []).slice(0, 24).map(p => ({
+            id: p.Id, name: p.Name || '', role: p.Role || p.Type || '',
+            img: (p.PrimaryImageTag && api) ? api.getScaledImageUrl(p.Id, { type: 'Primary', maxHeight: 220, tag: p.PrimaryImageTag }) : ''
+        }));
+    }
+
+    async _osdEnrich(options) {
+        const item = options.item || {};
+        let api = null;
+        try { api = item.ServerId ? ServerConnections.getApiClient(item.ServerId) : null; } catch (e) { api = null; }
+        const patch = {};
+        try {
+            if (api && item.Id && !(item.People && item.People.length) && !item.__plex) {
+                const full = await api.getItem(api.getCurrentUserId(), item.Id);
+                if (full) {
+                    patch.people = this._people(full, api);
+                    if (!(item.Chapters && item.Chapters.length) && full.Chapters) patch.chapters = full.Chapters.map((c, i) => ({ name: c.Name || ('Chapter ' + (i + 1)), ms: Math.round((c.StartPositionTicks || 0) / 10000) }));
+                    patch.isFavorite = !!(full.UserData && full.UserData.IsFavorite);
+                }
+            }
+        } catch (e) { /* keep what we have */ }
+        try {
+            if (api && !item.__plex) {
+                const user = await api.getCurrentUser();
+                patch.autoplay = !!(user && user.Configuration && user.Configuration.EnableNextEpisodeAutoPlay !== false);
+            }
+        } catch (e) { /* default on */ }
+        this._pushOsd(patch);
+    }
+
+    // The next title for Up Next. playbackManager fills its queue only once playback has started, so
+    // this runs after the native player reports it is playing (and again a little later).
+    _pushUpNext() {
+        try {
+            const next = playbackManager.getNextItem();
+            const n = next && next.item;
+            if (!n) return false;
+            this._pushOsd({
+                upNext: {
+                    title: n.SeriesName ? n.SeriesName + ' - ' + (n.Name || '') : (n.Name || ''),
+                    info: [n.ProductionYear, n.OfficialRating, n.RunTimeTicks ? Math.round(n.RunTimeTicks / 600000000) + 'm' : ''].filter(Boolean).join('   '),
+                    episode: n.Type === 'Episode'
+                }
+            });
+            return true;
+        } catch (e) { return false; }
+    }
+
+    _pushOsd(patch) {
+        if (!this._osdCache) return;
+        Object.assign(this._osdCache, patch || {});
+        const nv = nativeVideo();
+        try { if (nv && nv.updateOsd) nv.updateOsd({ osd: this._osdCache }); } catch (e) { /* ignore */ }
+    }
+
+    _onOsd(d) {
+        const action = d.action;
+        const value = d.value;
+        try { inputManager.notify(); } catch (e) { /* ignore */ }   // keeps Still Watching from counting this as idle
+        const item = (this._playOptions && this._playOptions.item) || {};
+        let api = null;
+        try { api = item.ServerId ? ServerConnections.getApiClient(item.ServerId) : null; } catch (e) { api = null; }
+        switch (action) {
+            case 'favorite': {
+                if (!api || !item.Id) return;
+                const target = !(this._osdCache && this._osdCache.isFavorite);
+                this._pushOsd({ isFavorite: target });
+                Promise.resolve(api.updateFavoriteStatus(api.getCurrentUserId(), item.Id, target)).then(() => {
+                    item.UserData = item.UserData || {};
+                    item.UserData.IsFavorite = target;
+                }).catch(() => this._pushOsd({ isFavorite: !target }));
+                return;
+            }
+            case 'audio':
+                try { playbackManager.setAudioStreamIndex(parseInt(value, 10), this); } catch (e) { /* ignore */ }
+                return;
+            case 'subtitle':
+                try { playbackManager.setSubtitleStreamIndex(parseInt(value, 10), this); } catch (e) { /* ignore */ }
+                return;
+            case 'bitrate':
+                try { localStorage.setItem('jpx-osd-bitrate', value); } catch (e) { /* ignore */ }
+                this._pushOsd({ bitrate: value });
+                try {
+                    playbackManager.setMaxStreamingBitrate({
+                        enableAutomaticBitrateDetection: value === 'auto',
+                        maxBitrate: value === 'auto' ? null : parseInt(value, 10)
+                    }, this);
+                } catch (e) { /* ignore */ }
+                return;
+            case 'person': {
+                const sid = item.ServerId;
+                try { playbackManager.stop(this); } catch (e) { /* ignore */ }
+                setTimeout(() => { try { appRouter.show('/details?id=' + encodeURIComponent(value) + (sid ? '&serverId=' + sid : '')); } catch (e) { /* ignore */ } }, 300);
+                return;
+            }
+            case 'upnext':
+                try { playbackManager.nextTrack(this); } catch (e) { /* ignore */ }
+                return;
+            default:
+        }
+    }
 
     supports() { return false; }
 

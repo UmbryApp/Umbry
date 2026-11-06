@@ -325,9 +325,11 @@ function getAudioStreamUrl(item, transcodingProfile, directPlayContainers, apiCl
         AudioCodec: transcodingProfile.AudioCodec,
         MaxAudioSampleRate: maxValues.maxAudioSampleRate,
         MaxAudioBitDepth: maxValues.maxAudioBitDepth,
-        // Umbry: 'api_key' (not 'ApiKey') — Emby rejects the newer Jellyfin param name with a 401,
-        // which broke ALL music on Emby servers. Jellyfin accepts both spellings.
+        // Umbry: send the token under BOTH names. Emby only accepts 'api_key' (ApiKey alone = 401,
+        // which broke all music on Emby); Jellyfin 12 only accepts 'ApiKey' (api_key alone = 401).
+        // Every server accepts the pair (verified: Emby 4.10, Jellyfin 10.11 and 12.0).
         api_key: apiClient.accessToken(),
+        ApiKey: apiClient.accessToken(),
         PlaySessionId: startingPlaySession,
         StartTimeTicks: startPosition || 0,
         EnableRedirection: true,
@@ -2868,7 +2870,9 @@ export class PlaybackManager {
                         Static: true,
                         mediaSourceId: mediaSource.Id,
                         deviceId: apiClient.deviceId(),
-                        api_key: apiClient.accessToken() // Umbry: Emby rejects 'ApiKey' (401); both servers accept 'api_key'
+                        // Umbry: both token names — Emby needs 'api_key', Jellyfin 12 needs 'ApiKey'.
+                        api_key: apiClient.accessToken(),
+                        ApiKey: apiClient.accessToken()
                     };
 
                     if (mediaSource.ETag) {

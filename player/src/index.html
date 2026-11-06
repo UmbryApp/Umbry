@@ -3,6 +3,30 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <script>
+        // Umbry on a TV (Android TV / Google TV / Fire TV): Android with no touch points (TV WebViews
+        // still say "Mobile"; every phone/tablet has touch).
+        // TVs report their 1080p panel as a small 960x540 viewport, so lay the app out at 1280x720
+        // (a standard TV canvas, scaled to fill the screen) and flag it for the lighter TV styles.
+        (function () {
+            try {
+                var ua = navigator.userAgent || '';
+                if (/UmbryTV/.test(ua) || (/Android/.test(ua) && navigator.maxTouchPoints === 0)) {
+                    document.documentElement.classList.add('jpx-tv');
+                    // TV-only, from the first frame: the aurora/ambient blobs are already soft gradients; the
+                    // extra filter blur on top costs tens of MB of GPU memory on 2 GB TVs for no visible change.
+                    var st = document.createElement('style');
+                    st.textContent = 'html.jpx-tv .jpx-aurora,html.jpx-tv #jpx-ambient span,html.jpx-tv .jpx-auth-blob{filter:none!important}'
+                        // Sean OK'd it: on TV the gradient backgrounds hold still (each moving blob is its own
+                        // full-size GPU layer redrawn every frame). Same colours and positions, just no drift.
+                        + 'html.jpx-tv .jpx-aurora-blob,html.jpx-tv .jpx-auth-blob,html.jpx-tv .jpx-account-blob{animation:none!important}';
+                    document.head.appendChild(st);
+                    var m = document.querySelector('meta[name=viewport]');
+                    if (m) m.setAttribute('content', 'width=1280, user-scalable=no, viewport-fit=cover');
+                }
+            } catch (e) { /* ignore */ }
+        })();
+    </script>
     <link rel="manifest" href="manifest.json">
     <meta name="format-detection" content="telephone=no">
     <meta name="msapplication-tap-highlight" content="no">

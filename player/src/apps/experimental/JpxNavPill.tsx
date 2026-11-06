@@ -131,6 +131,18 @@ const JpxNavPill = () => {
 
     const toggle = useCallback(() => setOpen(o => !o), []);
 
+    // Android TV: when the pill opens, put the remote on its first item (the items slide out between
+    // the logo and the chevron, so the chevron the user pressed ends up past them).
+    useEffect(() => {
+        if (!open || !document.documentElement.classList.contains('jpx-tv')) return;
+        const t = setTimeout(() => {
+            const first = document.querySelector<HTMLElement>('.jpx-nav.open .jpx-nav-items .jpx-nav-btn');
+            if (first) { first.focus({ preventScroll: true }); document.querySelectorAll('.jpx-sn-focus').forEach(e => e.classList.remove('jpx-sn-focus')); const ro = (window as unknown as { __jpxRingOn?: (el: HTMLElement) => void }).__jpxRingOn; if (ro) ro(first); else first.classList.add('jpx-sn-focus'); }
+        }, 320);
+        return () => clearTimeout(t);
+    }, [ open ]);
+
+    const isTvUi = document.documentElement.classList.contains('jpx-tv');
     const isFavorites = location.pathname === '/home' && location.search.includes('tab=1');
     const isHome = location.pathname === '/home' && !isFavorites;
     const atRoot = location.pathname === '/home';
@@ -280,11 +292,12 @@ const JpxNavPill = () => {
         ...(getPref('pref_show_favorites_button', true) ? [{ icon: 'favorite', label: 'Favorites', onClick: () => go('/home?tab=1'), active: isFavorites }] : []),
         ...(getPref('pref_show_libraries_in_toolbar', true) ? [{ icon: 'video_library', label: 'Libraries', onClick: (e: React.MouseEvent<HTMLElement>) => setLibAnchor(e.currentTarget) }] : []),
         { icon: 'library_music', label: 'Music Servers', onClick: () => go('/subsonic'), active: location.pathname === '/subsonic' },
-        { icon: 'download', label: 'Downloads', onClick: () => go('/downloads'), active: location.pathname === '/downloads' },
+        // Downloads and the admin Dashboard make no sense on a TV (Sean 2026-09-27).
+        ...(!isTvUi ? [{ icon: 'download', label: 'Downloads', onClick: () => go('/downloads'), active: location.pathname === '/downloads' }] : []),
         { icon: 'sync_alt', label: 'Scrobbling', onClick: () => { void promptScrobble(); }, active: false },
         ...(getPref('pref_show_switch_server_button', true) ? [{ icon: 'dns', label: 'Switch Server', onClick: (e: React.MouseEvent<HTMLElement>) => openServerMenu(e.currentTarget) }] : []),
         { icon: kidsModeActive() ? 'lock' : 'lock_open', label: kidsModeActive() ? 'Exit Kids Mode' : 'Kids Mode', onClick: () => { void toggleKidsMode(); } },
-        ...(isAdmin && isJellyfinServer ? [{ icon: 'settings', label: 'Dashboard', onClick: () => go('/jpxadmin'), active: location.pathname.startsWith('/jpxadmin') }] : [])
+        ...(isAdmin && isJellyfinServer && !isTvUi ? [{ icon: 'settings', label: 'Dashboard', onClick: () => go('/jpxadmin'), active: location.pathname.startsWith('/jpxadmin') }] : [])
     ];
 
     return (

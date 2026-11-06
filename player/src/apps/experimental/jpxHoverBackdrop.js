@@ -150,6 +150,22 @@ export function initJpxHoverBackdrop() {
     // mouseout never fires and a card preview / morph could get stuck.
     const noHover = typeof window !== 'undefined' && window.matchMedia
         && (window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches);
+
+    // Android TV: the remote's focus stands in for hover — same backdrop, same card preview.
+    if (document.documentElement.classList.contains('jpx-tv')) {
+        ensureLayers();
+        document.addEventListener('focusin', (e) => {
+            const card = e.target && e.target.closest && e.target.closest('.card');
+            const id = cardIdFrom(e.target);
+            if (id) { show(id); if (card && !card.closest('#loginPage')) schedulePreview(card, id); }
+        });
+        document.addEventListener('focusout', (e) => {
+            const leavingCard = e.target && e.target.closest && e.target.closest('.card');
+            const enteringCard = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.card');
+            if (leavingCard && !enteringCard) { hide(); removePreview(); }
+        });
+        return;
+    }
     if (noHover) return;
 
     ensureLayers();

@@ -363,7 +363,8 @@
 .jpx-guide-prog-title { font-size: 0.82rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 40em) {
-    .jpx-livetv { flex-direction: column; height: auto; }
+    /* Phones: start the player below the status bar and the floating nav button (both sat on the video). */
+    .jpx-livetv { flex-direction: column; height: auto; padding-top: calc(env(safe-area-inset-top, 0px) + 4.4rem); }
     .jpx-livetv-stage { aspect-ratio: 16 / 9; flex: none; }
     .jpx-livetv-side { flex: none; max-width: none; height: 60vh; }
     .jpx-guide-search { display: none; }

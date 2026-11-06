@@ -404,7 +404,7 @@ export class ComicsPlayer {
         });
 
         const api = toApi(ServerConnections.getApiClient(item));
-        const downloadUrl = getLibraryApi(api).getDownloadUrl({ itemId: item.Id }).replace(/([?&])ApiKey=/gi, '$1api_key=');
+        const downloadUrl = getLibraryApi(api).getDownloadUrl({ itemId: item.Id }).replace(/([?&])ApiKey=([^&]+)/i, '$1ApiKey=$2&api_key=$2') /* Umbry: both names — Emby needs api_key, Jellyfin 12 ApiKey */;
         this.archiveSource = new ArchiveSource(downloadUrl);
 
         //eslint-disable-next-line import/no-unresolved

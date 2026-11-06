@@ -156,6 +156,10 @@ export function makePlexApiClient(srv: PlexServer): Dict {
             // clearLogo: serve the original image (keeps PNG transparency) with the token appended.
             if (options.type === 'Logo') {
                 const p = isPath ? (srv.base + tag) : tag;
+                // Only our own server gets the token; an absolute logo URL on another host is fetched as-is.
+                let sameOrigin = isPath;
+                try { sameOrigin = sameOrigin || new URL(p).origin === new URL(srv.base).origin; } catch { /* bad URL */ }
+                if (!sameOrigin) return p;
                 return p + (p.indexOf('?') >= 0 ? '&' : '?') + 'X-Plex-Token=' + encodeURIComponent(srv.token);
             }
             // Backdrop/Art -> 16:9 transcode; everything else (posters, cast thumbs — Plex proxies the

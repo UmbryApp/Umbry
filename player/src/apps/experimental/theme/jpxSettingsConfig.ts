@@ -37,6 +37,10 @@ export interface JpxRow {
     admin?: boolean;
     electronOnly?: boolean;  // only show inside the Umbry desktop app (window.umbry present)
     nativeOnly?: boolean;    // show in any packaged native app (desktop Electron OR Android/Capacitor)
+    androidOnly?: boolean;   // only in the Android app (e.g. rating on Google Play)
+    accountOnly?: boolean;   // only while signed in to an Umbry account (Umbry Server sync)
+    localOnly?: boolean;     // only when NOT signed in to an Umbry account ("this device only")
+    tvHidden?: boolean;      // not shown on TV (makes no sense on a TV: admin, logs, source link, share)
 }
 
 export interface JpxSection { header?: string; rows: JpxRow[] }
@@ -50,7 +54,7 @@ export const JPX_PANELS: Record<string, JpxPanel> = {
     root: {
         id: 'root', title: 'Settings',
         sections: [{ rows: [
-            { type: 'route', icon: 'admin_panel_settings', title: 'Administration', subtitle: 'Access the server administration panel', route: 'jpxadmin', admin: true },
+            { type: 'route', icon: 'admin_panel_settings', title: 'Administration', subtitle: 'Access the server administration panel', route: 'jpxadmin', admin: true, tvHidden: true },
             { type: 'nav', icon: 'lock', title: 'Account & Security', subtitle: 'Authentication, PIN code, and parental controls', panel: 'auth' },
             { type: 'nav', icon: 'palette', title: 'Personalization', subtitle: 'Theme, navigation, home rows, and library visibility', panel: 'personalization' },
             { type: 'nav', icon: 'play_circle', title: 'Playback & SyncPlay', subtitle: 'Audio/video settings, subtitles, downloads, and SyncPlay controls', panel: 'playback' },
@@ -73,8 +77,9 @@ export const JPX_PANELS: Record<string, JpxPanel> = {
                 { type: 'route', icon: 'language', title: 'Interface Language', subtitle: 'Display language', route: 'userprofile' }
             ] },
             { header: 'Umbry Account', rows: [
-                { type: 'action', icon: 'vpn_key', title: 'Password Recovery Code', subtitle: 'Generate a code to reset your account password if you forget it', action: 'account_recovery_code' },
-                { type: 'action', icon: 'logout', title: 'Sign out of Umbry', subtitle: 'Sign out of your Umbry account on this device — returns you to the sign-in screen', action: 'account_sign_out' }
+                { type: 'action', icon: 'dns', title: 'Connect to an Umbry Server', subtitle: 'Sync your servers, watchlist and settings across all your devices', action: 'connect_umbry_server', localOnly: true },
+                { type: 'action', icon: 'vpn_key', title: 'Password Recovery Code', subtitle: 'Generate a code to reset your account password if you forget it', action: 'account_recovery_code', accountOnly: true },
+                { type: 'action', icon: 'logout', title: 'Sign out of Umbry', subtitle: 'Sign out of your Umbry account on this device — returns you to the sign-in screen', action: 'account_sign_out', accountOnly: true }
             ] },
             { header: 'Umbry Desktop App', rows: [
                 { type: 'action', icon: 'delete_forever', title: 'Uninstall Umbry', subtitle: 'Remove the Umbry desktop app from this computer', action: 'uninstall_umbry', electronOnly: true }
@@ -406,8 +411,13 @@ export const JPX_PANELS: Record<string, JpxPanel> = {
             { header: 'App Info', rows: [
                 { type: 'static', icon: 'info', title: 'Version', value: 'Umbry' },
                 { type: 'action', icon: 'system_update_alt', title: 'Check for Updates', subtitle: 'See if a newer version of Umbry is available', action: 'check_updates', nativeOnly: true },
-                { type: 'link', icon: 'code', title: 'Source Code', subtitle: 'Umbry is GPL-2.0 (built on Jellyfin) — download the source', url: 'https://dl.umbry.org/umbry-web-source.tar.gz' },
-                { type: 'route', icon: 'troubleshoot', title: 'Diagnostics & Logging', subtitle: 'Server logs', route: 'dashboard/logs', admin: true }
+                { type: 'link', icon: 'code', title: 'Source Code', subtitle: 'Umbry is GPL-2.0 (built on Jellyfin) — download the source', url: 'https://dl.umbry.org/umbry-web-source.tar.gz', tvHidden: true },
+                { type: 'route', icon: 'troubleshoot', title: 'Diagnostics & Logging', subtitle: 'Server logs', route: 'dashboard/logs', admin: true, tvHidden: true }
+            ] },
+            { header: 'Support Umbry', rows: [
+                { type: 'action', icon: 'star_rate', title: 'Rate Umbry', subtitle: 'Enjoying Umbry? Leave a rating on Google Play', action: 'rate_app', androidOnly: true },
+                { type: 'action', icon: 'share', title: 'Share Umbry', subtitle: 'Send Umbry to a friend', action: 'share_app', tvHidden: true },
+                { type: 'action', icon: 'school', title: 'Show welcome tour', subtitle: 'Replay the quick guide to getting set up', action: 'show_walkthrough' }
             ] },
             { header: 'Acknowledgments', rows: [
                 { type: 'prose', title: 'Acknowledgments', body: 'Umbry is built on Jellyfin Web (jellyfin.org) and also connects to Emby and Plex servers. Several of the visual themes in Umbry were adapted from the Moonfin project and then customized. Jellyfin, Emby, and Moonfin are independent projects; Umbry is not affiliated with or endorsed by any of them. Jellyfin Web and Moonfin are licensed under the GNU General Public License version 2, and Umbry is distributed under that same license.' }

@@ -8,6 +8,8 @@ import ThemeCss from 'components/ThemeCss';
 
 import JpxNavPill from './JpxNavPill';
 import { initJpxHoverBackdrop } from './jpxHoverBackdrop';
+import { initJpxPasswordReveal } from './theme/jpxPasswordReveal';
+import './jpxTv.scss';
 import { initJpxCardMorph } from './jpxCardMorph';
 import { initJpxRowMinimize } from './jpxRowMinimize';
 import { initJpxLibrarySelection } from './theme/jpxLibrarySelection';
@@ -61,6 +63,7 @@ export const Component = () => {
         initParental();
         initDeepLinkGuard();
         initJpxHoverBackdrop();
+        initJpxPasswordReveal();
         initJpxCardMorph();
         initJpxSpatialNav();
         initJpxTrakt();

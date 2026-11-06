@@ -6,7 +6,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
-import { verifyPin, setPin } from './jpxParental';
+import { verifyPin, setPin, clearPin, KIDS_ACTIVE } from './jpxParental';
+import { accountEmail, accountToken, loginAccount } from './jpxAccount';
+import { setPref } from './jpxPrefs';
 import './jpxPinPrompt.scss';
 
 type Mode = 'verify' | 'set';
@@ -26,6 +28,26 @@ function PinPad({ opts, onDone }: { opts: PromptOpts; onDone: (ok: boolean) => v
     const [ error, setError ] = useState('');
     const [ shake, setShake ] = useState(false);
     const [ busy, setBusy ] = useState(false);
+    // Forgot PIN: the Umbry account owner can clear the PIN by re-entering the account password.
+    const email = accountEmail();
+    const canRecover = opts.mode === 'verify' && !!email && !!accountToken();
+    const [ recovering, setRecovering ] = useState(false);
+    const [ password, setPassword ] = useState('');
+
+    const recover = useCallback(async () => {
+        if (!email || !password) return;
+        setBusy(true);
+        setError('');
+        try {
+            const r = await loginAccount(email, password);
+            if (!r.ok) { setError(r.error === 'invalid credentials' || /401|invalid/i.test(r.error || '') ? 'Incorrect password' : (r.error || 'Could not verify your password')); return; }
+            clearPin();
+            setPref(KIDS_ACTIVE, false);
+            onDone(true);
+        } finally {
+            setBusy(false);
+        }
+    }, [ email, password, onDone ]);
 
     const confirming = opts.mode === 'set' && firstPass !== null;
     const heading = opts.title
@@ -83,6 +105,7 @@ function PinPad({ opts, onDone }: { opts: PromptOpts; onDone: (ok: boolean) => v
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (e.key === 'Escape') { onDone(false); return; }
+            if ((e.target as HTMLElement | null)?.tagName === 'INPUT') return;
             if (e.key === 'Backspace') { pressRef.current('del'); return; }
             if (/^[0-9]$/.test(e.key)) pressRef.current(e.key);
         };
@@ -97,6 +120,22 @@ function PinPad({ opts, onDone }: { opts: PromptOpts; onDone: (ok: boolean) => v
                 <div className='jpx-pin-title'>{heading}</div>
                 {opts.subtitle && !error ? <div className='jpx-pin-sub'>{opts.subtitle}</div> : null}
                 {error ? <div className='jpx-pin-sub jpx-pin-err'>{error}</div> : null}
+                {recovering ? (
+                    <form className='jpx-pin-recover' onSubmit={e => { e.preventDefault(); void recover(); }}>
+                        <div className='jpx-pin-sub'>Enter the password for {email} to remove the PIN. Kids Mode will be turned off.</div>
+                        <input
+                            className='jpx-pin-password'
+                            type='password'
+                            autoFocus
+                            autoComplete='current-password'
+                            placeholder='Umbry account password'
+                            value={password}
+                            onChange={e => { setPassword(e.target.value); setError(''); }}
+                        />
+                        <button type='submit' className='jpx-pin-recover-go' disabled={busy || !password}>{busy ? 'Checking…' : 'Remove PIN'}</button>
+                        <button type='button' className='jpx-pin-link' onClick={() => { setRecovering(false); setPassword(''); setError(''); }}>Back to PIN</button>
+                    </form>
+                ) : (<>
                 <div className='jpx-pin-dots'>
                     {Array.from({ length: len }).map((_, i) => (
                         <span key={i} className={`jpx-pin-dot${i < entry.length ? ' filled' : ''}`} />
@@ -117,6 +156,8 @@ function PinPad({ opts, onDone }: { opts: PromptOpts; onDone: (ok: boolean) => v
                             </button>
                         ))}
                 </div>
+                {canRecover ? <button type='button' className='jpx-pin-link' onClick={() => { setRecovering(true); setError(''); }}>Forgot PIN?</button> : null}
+                </>)}
                 <button type='button' className='jpx-pin-cancel' onClick={() => onDone(false)}>Cancel</button>
             </div>
         </div>

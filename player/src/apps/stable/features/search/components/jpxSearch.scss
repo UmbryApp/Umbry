@@ -2,7 +2,8 @@
    a category-count chip row above the results, and bold section titles. */
 
 .jpx-search-fields {
-    padding-top: 4.6em;
+    /* Below the floating nav button, which sits under the phone status bar (it covered the search bar). */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 4.6em);
     max-width: 700px;
     margin: 0 auto;
 }

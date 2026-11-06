@@ -256,10 +256,10 @@ export function renderJpxDetailHeader(page, item, apiClient) {
         let headInner;
         if (logoTag) {
             const url = apiClient.getScaledImageUrl(item.Id, { type: 'Logo', maxWidth: 600, tag: logoTag });
-            headInner = '<img class="jpx-dh-logo" src="' + url + '" alt="' + esc(item.Name) + '" />';
+            headInner = '<img class="jpx-dh-logo" src="' + esc(url) + '" alt="' + esc(item.Name) + '" />';
         } else if (parentLogo) {
             const url = apiClient.getScaledImageUrl(item.ParentLogoItemId, { type: 'Logo', maxWidth: 600, tag: item.ParentLogoImageTag });
-            headInner = '<img class="jpx-dh-logo" src="' + url + '" alt="' + esc(item.Name) + '" />';
+            headInner = '<img class="jpx-dh-logo" src="' + esc(url) + '" alt="' + esc(item.Name) + '" />';
         } else {
             headInner = '<h1 class="jpx-dh-title">' + esc(item.Name) + '</h1>';
         }
@@ -356,6 +356,17 @@ export function renderJpxDetailHeader(page, item, apiClient) {
 
         // ---- wire Play -> stock play/resume button ----
         h.querySelector('.jpx-dh-play').addEventListener('click', () => {
+            // Audiobooks pick up where you left off (stock web restarts audio from 0; the Apple app resumes).
+            // Read the position fresh: the page's copy of the item can predate the last listen.
+            if (item.Type === 'AudioBook') {
+                Promise.resolve(apiClient.getItem(apiClient.getCurrentUserId(), item.Id)).catch(() => item).then((fresh) => {
+                    const pos = (fresh && fresh.UserData && fresh.UserData.PlaybackPositionTicks) || 0;
+                    import('components/playback/playbackmanager').then(({ playbackManager }) => {
+                        playbackManager.play({ items: [fresh || item], startPositionTicks: pos, serverId: item.ServerId });
+                    });
+                });
+                return;
+            }
             const b = page.querySelector('.btnPlay:not(.hide)') || page.querySelector('.btnReplay:not(.hide)');
             if (b) b.click();
         });
@@ -498,7 +509,8 @@ export function renderJpxDetailHeader(page, item, apiClient) {
             actions.appendChild(wlBtn);
         }
 
-        if (document.querySelector(castSel)) actions.appendChild(makeBtn('cast', 'Cast', castFn));
+        const tvUi = document.documentElement.classList.contains('jpx-tv'); // no Cast / Download on a TV
+        if (!tvUi && document.querySelector(castSel)) actions.appendChild(makeBtn('cast', 'Cast', castFn));
         if (!isCollection && hasStock('.btnPlayTrailer')) actions.appendChild(makeBtn('theaters', 'Trailer', clickStock('.btnPlayTrailer')));
 
         // secondary (revealed by More). Playstate/rating/more-commands are set up asynchronously by
@@ -530,7 +542,7 @@ export function renderJpxDetailHeader(page, item, apiClient) {
         jpxWireFavorite(favBtn, item, apiClient);
         secondary.push(favBtn);
         secondary.push(makeBtn('playlist_add', 'Playlist', () => jpxOpenPlaylist(item, apiClient), 'jpx-dh-abtn-more'));
-        if (jpxDl.isDownloadable(item)) {
+        if (!tvUi && jpxDl.isDownloadable(item)) {
             const dlId = jpxDl.entryId(item);
             const st0 = (jpxDl.getEntry(dlId) || {}).status;
             const dlBtn = makeBtn(st0 === 'done' ? 'download_done' : 'download', st0 === 'done' ? 'Downloaded' : 'Download', null, 'jpx-dh-abtn-more' + (st0 === 'done' ? ' jpx-dh-abtn-accent' : ''));
@@ -589,7 +601,7 @@ export function renderJpxDetailHeader(page, item, apiClient) {
                         }
                     }
                     nu.innerHTML = '<div class="jpx-dh-nextup-label">Next Up</div>'
-                        + '<a class="jpx-dh-nextup-card" href="#/details?id=' + ep.Id + '">'
+                        + '<a class="jpx-dh-nextup-card" href="#/details?id=' + encodeURIComponent(ep.Id) + '">'
                         + '<div class="jpx-dh-nextup-info">'
                         + '<div class="jpx-dh-nextup-title">' + esc(sxe + ' - ' + (ep.Name || '')) + '</div>'
                         + (ep.Overview ? '<div class="jpx-dh-nextup-syn">' + esc(ep.Overview) + '</div>' : '')
@@ -622,7 +634,7 @@ function personAvatar(apiClient, p, sub) {
     const av = url
         ? '<div class="jpx-tab-avatar" style="background-image:url(\'' + url + '\')"></div>'
         : '<div class="jpx-tab-avatar jpx-tab-avatar-none"><span class="material-icons" aria-hidden="true">person</span></div>';
-    return '<a class="jpx-tab-person" href="#/details?id=' + p.Id + '">' + av
+    return '<a class="jpx-tab-person" href="#/details?id=' + encodeURIComponent(p.Id) + '">' + av
         + '<div class="jpx-tab-pname">' + esc(p.Name) + '</div>'
         + (sub ? '<div class="jpx-tab-psub">' + esc(sub) + '</div>' : '') + '</a>';
 }
@@ -680,7 +692,7 @@ function loadSimilar(item, apiClient, el) {
             el.innerHTML = items.map(s => {
                 const tag = s.ImageTags && s.ImageTags.Primary;
                 const url = tag ? apiClient.getScaledImageUrl(s.Id, { type: 'Primary', maxHeight: 400, tag: tag }) : null;
-                return '<a class="jpx-tab-simcard" href="#/details?id=' + s.Id + '">'
+                return '<a class="jpx-tab-simcard" href="#/details?id=' + encodeURIComponent(s.Id) + '">'
                     + '<div class="jpx-tab-simposter"' + (url ? ' style="background-image:url(\'' + url + '\')"' : '') + '></div>'
                     + '<div class="jpx-tab-simname">' + esc(s.Name) + '</div></a>';
             }).join('');
@@ -1077,7 +1089,7 @@ function loadGroupingGrid(item, apiClient, el, countEl, searchTerm) {
             el.innerHTML = items.map(it => {
                 const tag = it.ImageTags && it.ImageTags.Primary;
                 const url = tag ? apiClient.getScaledImageUrl(it.Id, { type: 'Primary', maxWidth: wide ? 500 : 320, tag: tag }) : null;
-                return '<a class="jpx-grpcard' + (wide ? ' jpx-grpcard-wide' : '') + '" href="#/details?id=' + it.Id + '">'
+                return '<a class="jpx-grpcard' + (wide ? ' jpx-grpcard-wide' : '') + '" href="#/details?id=' + encodeURIComponent(it.Id) + '">'
                     + '<div class="jpx-grpcard-img"' + (url ? ' style="background-image:url(\'' + url + '\')"' : '') + '>'
                     + (url ? '' : '<span class="material-icons" aria-hidden="true">movie</span>') + '</div>'
                     + '<div class="jpx-grpcard-t">' + esc(it.Name || '') + '</div>'
@@ -1327,7 +1339,7 @@ function renderJpxArtist(page, item, apiClient) {
             grid.innerHTML = albums.map(a => {
                 const at = a.ImageTags && a.ImageTags.Primary;
                 const au = at ? apiClient.getScaledImageUrl(a.Id, { type: 'Primary', maxWidth: 320, tag: at }) : null;
-                return '<a class="jpx-grpcard" href="#/details?id=' + a.Id + '">'
+                return '<a class="jpx-grpcard" href="#/details?id=' + encodeURIComponent(a.Id) + '">'
                     + '<div class="jpx-grpcard-img"' + (au ? ' style="background-image:url(\'' + au + '\')"' : '') + '>'
                     + (au ? '' : '<span class="material-icons" aria-hidden="true">album</span>') + '</div>'
                     + '<div class="jpx-grpcard-t">' + esc(a.Name) + '</div>'
@@ -1376,7 +1388,7 @@ function renderJpxAlbum(page, item, apiClient) {
 
         h.innerHTML =
             '<h1 class="jpx-alb-title">' + esc(item.Name) + '</h1>'
-            + (artist ? '<a class="jpx-alb-artist"' + (artistId ? ' href="#/details?id=' + artistId + '"' : '') + '>' + esc(artist) + '</a>' : '')
+            + (artist ? '<a class="jpx-alb-artist"' + (artistId ? ' href="#/details?id=' + encodeURIComponent(artistId) + '"' : '') + '>' + esc(artist) + '</a>' : '')
             + (meta ? '<div class="jpx-alb-meta">' + esc(meta) + '</div>' : '')
             + '<button type="button" class="jpx-alb-play"><span class="material-icons" aria-hidden="true">play_arrow</span><span>Play</span></button>'
             + '<div class="jpx-dh-actions jpx-alb-actions"></div>'
@@ -1439,7 +1451,7 @@ function renderJpxAlbum(page, item, apiClient) {
                 const dur = t.RunTimeTicks ? fmtSecs(t.RunTimeTicks / 10000000) : '';
                 const tArtist = (t.Artists && t.Artists.join(', ')) || '';
                 const sub = (tArtist && tArtist !== artist) ? tArtist : '';
-                return '<button type="button" class="jpx-alb-row" data-i="' + i + '" data-id="' + t.Id + '">'
+                return '<button type="button" class="jpx-alb-row" data-i="' + i + '" data-id="' + esc(t.Id) + '">'
                     + '<span class="jpx-alb-num">' + (t.IndexNumber != null ? t.IndexNumber : (i + 1)) + '</span>'
                     + '<span class="jpx-alb-row-body"><span class="jpx-alb-row-name">' + esc(t.Name) + '</span>'
                     + (sub ? '<span class="jpx-alb-row-sub">' + esc(sub) + '</span>' : '') + '</span>'
@@ -1638,6 +1650,14 @@ function renderJpxPerson(page, item, apiClient) {
         // ---- Movies / Series toggle + filmography grid ----
         let kind = 'Movie';
         let bdSet = false;
+        // TV: the page backdrop is the person themself (headshot on the right, fading into the page);
+        // the random filmography backdrop stays the fallback when there's no photo.
+        if (document.documentElement.classList.contains('jpx-tv') && imgTag) {
+            const big = apiClient.getScaledImageUrl(item.Id, { type: 'Primary', maxHeight: 1080, tag: imgTag });
+            h.style.setProperty('--jpx-tv-bd', "url('" + big + "')");
+            h.classList.add('jpx-person-bgphoto');
+            bdSet = true;
+        }
         const gridEl = h.querySelector('.jpx-person-grid');
         const reload = () => loadPersonFilmography(item, apiClient, gridEl, kind, (url) => {
             if (url && !bdSet) { bdSet = true; h.style.setProperty('--jpx-tv-bd', "url('" + url + "')"); }

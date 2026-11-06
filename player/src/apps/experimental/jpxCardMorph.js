@@ -12,6 +12,9 @@ import './jpxCardMorph.scss';
 const ENTER_DELAY = 150;
 let current = null;
 let enterTimer = null;
+// The card that actually wears .jpx-morph (current = the hovered one, which may still be waiting out ENTER_DELAY).
+let shown = null;
+let leaveTimer = null;
 let raf = null;
 let panelEl = null;
 let inited = false;
@@ -147,7 +150,12 @@ function morph(card, id) {
     const apiClient = ServerConnections.currentApiClient();
     if (!apiClient) return;
     getInfo(apiClient, id).then(info => {
-        if (current !== card || !info.imageUrl) return;
+        if (current !== card) return;
+        // Swap in one frame: the old card collapses as this one expands, so the row's total width never changes and
+        // the pointer stays on this card. Collapsing the old card first (on hover) slid the row left by the morph's
+        // extra width, and moving right the pointer landed on the card after this one (Sean, macOS, 2026-10-03).
+        if (shown && shown !== card) unmorph(shown);
+        if (!info.imageUrl) return;
 
         const imgc = card.querySelector('.cardImageContainer');
         if (imgc) {
@@ -164,7 +172,23 @@ function morph(card, id) {
             + (info.meta ? '<div class="jpx-morph-meta">' + esc(info.meta) + '</div>' : '')
             + (info.overview ? '<div class="jpx-morph-overview">' + esc(info.overview) + '</div>' : '');
 
-        card.classList.add('jpx-morph');
+        // Android TV: in a wrapping grid (library, search) the wider morphed card would push a neighbour
+        // onto the next row and shift every row below by a column — so the remote's Down lands one
+        // column over. On TV it grows out over its neighbours instead (equal negative side margins keep
+        // the layout width the same), so the grid never reflows. Rows that scroll sideways are unchanged.
+        const tvGrid = document.documentElement.classList.contains('jpx-tv')
+            && card.parentElement && getComputedStyle(card.parentElement).flexWrap === 'wrap';
+        if (tvGrid) {
+            const w0 = card.getBoundingClientRect().width;
+            card.style.transition = 'none';
+            card.classList.add('jpx-morph');
+            const extra = card.getBoundingClientRect().width - w0;
+            card.style.marginLeft = card.style.marginRight = (-extra / 2) + 'px';
+            card.dataset.jpxTvGrid = '1';
+        } else {
+            card.classList.add('jpx-morph');
+        }
+        shown = card;
         applyImage();
         positionPanel(card);
         p.classList.add('active');
@@ -174,7 +198,12 @@ function morph(card, id) {
 
 function unmorph(card) {
     if (!card) return;
+    if (shown === card) shown = null;
     card.classList.remove('jpx-morph');
+    if (card.dataset.jpxTvGrid) {
+        card.style.marginLeft = card.style.marginRight = card.style.transition = '';
+        delete card.dataset.jpxTvGrid;
+    }
     const imgc = card.querySelector('.cardImageContainer');
     if (imgc) {
         if (imgc.dataset.jpxOrigBg !== undefined) {
@@ -196,6 +225,8 @@ export function initJpxCardMorph() {
     // Always tear down any active morph/panel on navigation or touch — on touch devices mouseout
     // never fires, which would leave the panel stuck (a purple-edged sliver at the top-left).
     const jpxCleanup = () => {
+        clearTimeout(leaveTimer);
+        if (shown) unmorph(shown);
         if (current) unmorph(current);
         current = null;
         clearTimeout(enterTimer);
@@ -211,26 +242,56 @@ export function initJpxCardMorph() {
     // (it can't be used there and only causes the stuck-panel artifact).
     const noHover = typeof window !== 'undefined' && window.matchMedia
         && (window.matchMedia('(hover: none)').matches || window.matchMedia('(pointer: coarse)').matches);
+
+    // Android TV: no pointer, but the remote's focus plays the part of hover (same morph, same
+    // panel). Focus always moves somewhere, so focusout reliably ends it — no stuck panel.
+    if (document.documentElement.classList.contains('jpx-tv')) {
+        document.addEventListener('focusin', (e) => {
+            const card = cardFrom(e.target);
+            if (!card || card === current) return;
+            if (current) unmorph(current);
+            current = card;
+            const id = card.getAttribute('data-id');
+            clearTimeout(enterTimer);
+            enterTimer = setTimeout(() => { if (current === card) morph(card, id); }, ENTER_DELAY);
+        });
+        document.addEventListener('focusout', (e) => {
+            const card = cardFrom(e.target);
+            const entering = cardFrom(e.relatedTarget);
+            if (card && card === current && entering !== card) {
+                clearTimeout(enterTimer);
+                unmorph(card);
+                current = null;
+            }
+        });
+        return;
+    }
     if (noHover) return;
 
     document.addEventListener('mouseover', (e) => {
         const card = cardFrom(e.target);
-        if (!card || card === current) return;
-        if (current) unmorph(current);
+        if (!card) return;
+        clearTimeout(leaveTimer);
+        if (card === current) return;
+        // the morphed card stays wide until this one morphs (see morph) — card to card never reflows under the pointer
         current = card;
         const id = card.getAttribute('data-id');
         clearTimeout(enterTimer);
         enterTimer = setTimeout(() => { if (current === card) morph(card, id); }, ENTER_DELAY);
     });
 
+    // Leaving the cards altogether collapses the morph; card → card is the mouseover swap above. The short grace covers the
+    // gap between two cards.
     document.addEventListener('mouseout', (e) => {
         const card = cardFrom(e.target);
-        const entering = cardFrom(e.relatedTarget);
-        if (card && card === current && entering !== card) {
+        if (!card || cardFrom(e.relatedTarget)) return;
+        clearTimeout(leaveTimer);
+        leaveTimer = setTimeout(() => {
             clearTimeout(enterTimer);
-            unmorph(card);
+            if (shown) unmorph(shown);
+            if (current) unmorph(current);
             current = null;
-        }
+        }, 80);
     });
 }
 

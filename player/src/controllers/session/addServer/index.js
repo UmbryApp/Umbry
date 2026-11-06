@@ -46,6 +46,23 @@ function handleConnectionResult(page, result) {
 // treat it as a Plex server and offer a Plex account sign-in (OAuth or email/password). This lets
 // people you've shared libraries with connect with the address alone — they sign in as themselves.
 function tryPlexSignIn(page, base) {
+    // Umbry: only offer the Plex sign-in when something actually answers at that address. A Jellyfin
+    // or Emby server that is down (or a typo) gets "can't connect", not a Plex login. A tokenless Plex
+    // probe is CORS-blocked, so an opaque no-cors response is enough to know the host is up.
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(function() { if (ctl) ctl.abort(); }, 8000);
+    fetch(base.replace(/\/+$/, '') + '/identity', { mode: 'no-cors', cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+        .then(function() { clearTimeout(timer); showPlexSignIn(page, base); }, function() {
+            clearTimeout(timer);
+            loading.hide();
+            Dashboard.alert({
+                message: globalize.translate('MessageUnableToConnectToServer'),
+                title: globalize.translate('HeaderConnectionFailure')
+            });
+        });
+}
+
+function showPlexSignIn(page, base) {
     loading.hide();
     import('../../../apps/experimental/theme/jpxPlexSignIn').then(function(m) {
         m.promptPlexSignIn(base).then(function(srv) {
@@ -62,18 +79,21 @@ function tryPlexSignIn(page, base) {
     });
 }
 
-function connectJellyfin(page, host) {
+function connectJellyfin(page, host, retried) {
     var base = /^https?:\/\//.test(host) ? host : 'http://' + host;
+    // Umbry: the very first request after install can stall while the WebView starts its network
+    // stack (seen at ~29 s, past the 20 s connect timeout), so try once more before giving up.
+    var again = function() { if (!retried) { connectJellyfin(page, host, true); return true; } return false; };
     ServerConnections.connectToAddress(host, {
         enableAutoLogin: appSettings.enableAutoLogin()
     }).then(function(result) {
         if (result && (result.State === ConnectionState.SignedIn || result.State === ConnectionState.ServerSignIn)) {
             handleConnectionResult(page, result);
-        } else {
+        } else if (!again()) {
             tryPlexSignIn(page, base);
         }
     }, function() {
-        tryPlexSignIn(page, base);
+        if (!again()) tryPlexSignIn(page, base);
     });
 }
 

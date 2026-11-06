@@ -286,7 +286,10 @@ export default function (view, params) {
     function getTargetUrl() {
         if (params.url) {
             try {
-                return decodeURIComponent(params.url);
+                const target = decodeURIComponent(params.url);
+                // Never "return" to a sign-in-flow page (e.g. after Sign Out the redirect remembers
+                // /selectserver) — a successful sign-in always lands somewhere real.
+                if (!/^\/?(selectserver|addserver|login)\b/.test(target)) return target;
             } catch (err) {
                 console.warn('[LoginPage] unable to decode url param', params.url, err);
             }
@@ -408,7 +411,7 @@ export default function (view, params) {
         });
     }
 
-    function jpxChooseServer(server) {
+    function jpxChooseServer(server, forceSignIn) {
         if (!server) return;
         if (server.__plex) {
             var __srv = server.__plexServer;
@@ -447,7 +450,7 @@ export default function (view, params) {
             const apiClient = result.ApiClient;
             // Route all subsequent auth on this page at the chosen server.
             jpxChosenApiClient = apiClient;
-            if (result.State === ConnectionState.SignedIn) {
+            if (result.State === ConnectionState.SignedIn && !forceSignIn) {
                 Dashboard.onServerChanged(apiClient.getCurrentUserId(), apiClient.accessToken(), apiClient);
                 jpxReloadHome();
                 return;
@@ -519,6 +522,15 @@ export default function (view, params) {
             var __bar = view.querySelector('.jpx-remove-bar'); if (__bar) __bar.classList.add('hide');
         });
         loading.hide();
+    }
+
+    function jpxOpenServerById(serverId) {
+        Promise.resolve(ServerConnections.getAvailableServers()).catch(function () { return []; }).then(function (servers) {
+            var s = (servers || []).filter(function (x) { return x.Id === serverId; })[0];
+            if (!s) return; // unknown here (e.g. Plex) — the picker is already showing
+            if (s.AccessToken && s.UserId) { jpxChooseServer(s); return; } // really signed in → Home
+            jpxChooseServer(Object.assign({}, s, { AccessToken: null, UserId: null }), true);
+        });
     }
 
     function jpxShowServerSelect() {
@@ -653,6 +665,9 @@ export default function (view, params) {
         // Umbry: show the server picker first so it renders even when the current client is
         // null (after sign-out) or a Plex shim; then run the optional server-specific calls.
         jpxShowServerSelect();
+        // Opened for a specific server (after Add Server, or a sign-in redirect): go straight to that
+        // server's users / sign-in form instead of making the user pick it again.
+        if (params.serverid) jpxOpenServerById(params.serverid);
 
         const apiClient = getApiClient();
         if (!apiClient || typeof apiClient.getJSON !== 'function') { return; }

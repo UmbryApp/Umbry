@@ -237,21 +237,52 @@ export async function detectAllServers(): Promise<string[]> {
         }
     } catch { /* ignore */ }
     try { const one = await detectLocalServer(); if (one) found.add(normalizeUrl(one)); } catch { /* ignore */ }
+    // Phones/tablets (Capacitor) have no LAN scanner and don't know their own IP: sweep the common
+    // home /24s (same list as the desktop app and native discovery), so a server on another VLAN
+    // is found too.
+    const isCap = !!(window as unknown as { Capacitor?: unknown }).Capacitor;
+    // TVs: a full multi-range sweep opens thousands of sockets and spikes memory past what 2 GB TVs
+    // allow (the app was killed on the connect screen) — TVs use the gentle first-server scan instead.
+    const isTv = document.documentElement.classList.contains('jpx-tv');
+    if (isTv) {
+        try { const one = await detectFirstServer(); if (one) found.add(one); } catch { /* ignore */ }
+    } else if (isCap && !(umbry && umbry.detectServers)) {
+        for (const base of COMMON_BASES) {
+            try { (await sweepSubnet(base + '.', 8790)).forEach(u => found.add(u)); } catch { /* ignore */ }
+        }
+    }
     return [...found];
 }
 
-async function sweepSubnet(base: string, port: number): Promise<string[]> {
+/** TVs only: the FIRST reachable Umbry Server, found fast (short waits, wide fan-out, stop at the
+ *  first hit) so the TV's first-run screen fills it in within seconds. */
+export async function detectFirstServer(): Promise<string> {
+    for (const base of COMMON_BASES) {
+        try { const hit = (await sweepSubnet(base + '.', 8790, 600, 24, true))[0]; if (hit) return hit; } catch { /* ignore */ }
+    }
+    return '';
+}
+
+// Common home / homelab /24s (mirrors the desktop app's EXTRA_BASES and native UmbryDiscovery).
+const COMMON_BASES = [ '192.168.1', '192.168.0', '192.168.2', '192.168.4', '192.168.8',
+    '192.168.10', '192.168.20', '10.0.0', '10.0.1', '10.1.1' ];
+
+// timeoutMs/concurrency/stopAfterFirst are only changed on TVs (see detectFirstServer); every other
+// device keeps the defaults.
+async function sweepSubnet(base: string, port: number, timeoutMs = 1200, concurrency = 32, stopAfterFirst = false): Promise<string[]> {
     const hits: string[] = [];
     const probe = (ip: string) => new Promise<void>((resolve) => {
         const ctrl = new AbortController();
-        const t = setTimeout(() => { ctrl.abort(); resolve(); }, 1200);
+        const t = setTimeout(() => { ctrl.abort(); resolve(); }, timeoutMs);
         fetch(`http://${ip}:${port}/health`, { signal: ctrl.signal })
             .then(r => { clearTimeout(t); if (r.ok) hits.push(`http://${ip}:${port}`); resolve(); })
             .catch(() => { clearTimeout(t); resolve(); });
     });
     const ips: string[] = []; for (let i = 1; i <= 254; i++) ips.push(base + i);
     let idx = 0;
-    await Promise.all(Array.from({ length: 32 }, async () => { while (idx < ips.length) { await probe(ips[idx++]); } }));
+    await Promise.all(Array.from({ length: concurrency }, async () => {
+        while (idx < ips.length && !(stopAfterFirst && hits.length)) { await probe(ips[idx++]); }
+    }));
     return hits;
 }
 

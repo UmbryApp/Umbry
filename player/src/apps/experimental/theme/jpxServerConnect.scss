@@ -1,0 +1,79 @@
+// "Connect to an Umbry Server" chooser (jpxServerConnect.tsx). Theme-token driven, dark glass fallback.
+.jpx-srvc-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.66);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+.jpx-srvc-card {
+    width: min(100%, 440px);
+    max-height: 100%;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px 22px 20px;
+    border-radius: 20px;
+    background: var(--jpx-t-card, #1b1d24);
+    color: var(--jpx-t-text, #fff);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.jpx-srvc-top { display: flex; align-items: center; justify-content: space-between; }
+.jpx-srvc-icon { font-size: 30px !important; color: var(--jpx-t-accent, #9385f5); }
+.jpx-srvc-close {
+    width: 34px; height: 34px; border: none; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08); color: inherit; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    &:hover { background: rgba(255, 255, 255, 0.16); }
+}
+.jpx-srvc-title { font-size: 1.2rem; font-weight: 700; }
+.jpx-srvc-sub { font-size: 0.9rem; opacity: 0.75; line-height: 1.4; }
+.jpx-srvc-err { color: #ff6b7a; font-size: 0.88rem; }
+.jpx-srvc-scan { display: flex; align-items: center; gap: 10px; padding: 14px 0; opacity: 0.85; }
+.jpx-srvc-spin {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2.5px solid rgba(255, 255, 255, 0.15); border-top-color: var(--jpx-t-accent, #9385f5);
+    animation: jpx-srvc-spin 0.9s linear infinite;
+}
+@keyframes jpx-srvc-spin { to { transform: rotate(360deg); } }
+.jpx-srvc-label { font-size: 0.86rem; opacity: 0.7; }
+.jpx-srvc-list { display: flex; flex-direction: column; gap: 8px; }
+.jpx-srvc-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 14px;
+    background: var(--jpx-t-button-normal, rgba(255, 255, 255, 0.06)); color: inherit;
+    font: inherit; text-align: left; cursor: pointer;
+    &:hover:not(:disabled) { border-color: var(--jpx-t-accent, #9385f5); }
+    &:disabled { opacity: 0.6; cursor: default; }
+    .material-icons { opacity: 0.7; }
+}
+.jpx-srvc-host { flex: 1; font-variant-numeric: tabular-nums; }
+.jpx-srvc-go { font-size: 0.86rem; font-weight: 600; color: var(--jpx-t-accent, #9385f5); }
+.jpx-srvc-none { display: flex; flex-direction: column; gap: 6px; font-size: 0.92rem; line-height: 1.45; opacity: 0.9; }
+.jpx-srvc-primary {
+    height: 44px; border: none; border-radius: 12px;
+    background: var(--jpx-t-accent, #9385f5); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+    &:disabled { opacity: 0.5; cursor: default; }
+}
+.jpx-srvc-manual { display: flex; flex-direction: column; gap: 10px; }
+.jpx-srvc-input {
+    height: 44px; padding: 0 14px; border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.14); background: var(--jpx-t-button-normal, rgba(255, 255, 255, 0.08));
+    color: inherit; font: inherit; outline: none;
+    &:focus { border-color: var(--jpx-t-accent, #9385f5); }
+}
+.jpx-srvc-links { display: flex; justify-content: center; gap: 18px; flex-wrap: wrap; }
+.jpx-srvc-link {
+    border: none; background: none; color: var(--jpx-t-accent, #9385f5); font: inherit; font-size: 0.88rem; cursor: pointer;
+    &:hover { text-decoration: underline; }
+}
+.jpx-srvc-close:focus-visible, .jpx-srvc-item:focus-visible, .jpx-srvc-primary:focus-visible, .jpx-srvc-link:focus-visible {
+    outline: 2px solid #ffc670; outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) { .jpx-srvc-spin { animation-duration: 3s; } }

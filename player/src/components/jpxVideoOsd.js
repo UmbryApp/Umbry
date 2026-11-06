@@ -317,7 +317,7 @@ export function initJpxVideoOsd(view, getPlayer) {
             const cards = people.slice(0, 24).map(p => {
                 const img = (p.PrimaryImageTag && ac)
                     ? ac.getScaledImageUrl(p.Id, { type: 'Primary', maxHeight: 220, tag: p.PrimaryImageTag }) : null;
-                return '<a class="jpx-osd-person" href="#/details?id=' + p.Id + '">'
+                return '<a class="jpx-osd-person" href="#/details?id=' + encodeURIComponent(p.Id) + '">'
                     + '<span class="jpx-osd-person-img"' + (img ? ' style="background-image:url(\'' + img + '\')"' : '')
                     + '>' + (img ? '' : '<span class="material-icons" aria-hidden="true">person</span>') + '</span>'
                     + '<span class="jpx-osd-person-name">' + esc(p.Name) + '</span>'

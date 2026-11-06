@@ -10,6 +10,8 @@ import { Outlet } from 'react-router-dom';
 import { accountToken, getSyncMode, refreshSession, logoutAccount, startHeartbeat } from 'apps/experimental/theme/jpxAccount';
 import { promptJpxAccount } from 'apps/experimental/theme/jpxAccountPrompt';
 import { pullAndHydrate } from 'apps/experimental/theme/jpxCloud';
+import { initJpxPasswordReveal } from 'apps/experimental/theme/jpxPasswordReveal';
+import { promptWalkthrough, shouldShowWalkthroughAtStartup } from 'apps/experimental/theme/jpxWalkthrough';
 
 const JpxAccountRequired = () => {
     const [ ready, setReady ] = useState(false);
@@ -17,6 +19,10 @@ const JpxAccountRequired = () => {
     useEffect(() => {
         let cancelled = false;
         (async () => {
+            initJpxPasswordReveal();
+            // First launch (or every launch with "Show on startup" ticked): the welcome tour.
+            if (shouldShowWalkthroughAtStartup()) await promptWalkthrough();
+            if (cancelled) return;
             const mode = getSyncMode();
             let needPrompt = false;
             if (mode === null) {

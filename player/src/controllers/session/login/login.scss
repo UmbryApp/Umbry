@@ -28,8 +28,8 @@
 /* Umbry: pre-login back arrow (server-select is the root → hidden there via .hide) */
 #loginPage .jpx-login-back {
     position: fixed;
-    top: 1rem;
-    left: 1rem;
+    top: calc(env(safe-area-inset-top, 0px) + 1rem);
+    left: calc(env(safe-area-inset-left, 0px) + 1rem);
     z-index: 5;
     width: 2.8rem;
     height: 2.8rem;

@@ -12,6 +12,17 @@ import { createApiClient } from 'utils/jellyfin-apiclient/createApiClient';
 import { makePlexApiClient } from './jpxPlexClient';
 import { getPlexServer } from './jpxPlex';
 import { applyThemeForCurrentServer } from './jpxTheme';
+import { currentSettings as userSettingsInst, setUserInfo } from 'scripts/settings/userSettings';
+import { updateCurrentCulture } from 'lib/globalize';
+
+/** A restored session skips Jellyfin's sign-in event, which is what binds the user's own settings
+ *  (Display Language, skip lengths, subtitle and playback choices) — bind them here, then apply the language. */
+function bindUserSettings(userId: string, apiClient: any): void {
+    try {
+        if ((userSettingsInst as any).currentUserId === userId) return;
+        void Promise.resolve(setUserInfo(userId, apiClient)).then(() => updateCurrentCulture()).catch(() => updateCurrentCulture());
+    } catch { /* ignore */ }
+}
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -66,9 +77,20 @@ function restoreJellyfin(): boolean {
         // Home shows "no libraries".
         if (cur && cur.isLoggedIn && cur.isLoggedIn() && (!saved || !saved.id || curId === saved.id)) {
             sc.firstConnection = true;
+            if (cur.getCurrentUserId && cur.getCurrentUserId()) bindUserSettings(cur.getCurrentUserId(), cur);
             return true;
         }
         if (!saved || !saved.token || !saved.url || !saved.userId) return false;
+        // Prefer the address the person typed for this server (Jellyfin's credentials keep it as
+        // ManualAddress). An older save may hold the server's LAN address, which is unreachable away from home.
+        try {
+            const creds = JSON.parse(localStorage.getItem('jellyfin_credentials') || '{}');
+            const s = (creds.Servers || []).find((x: any) => x && x.Id === saved.id);
+            if (s && s.ManualAddress && s.ManualAddress !== saved.url) {
+                saved.url = s.ManualAddress;
+                try { localStorage.setItem('jpx-active-jf', JSON.stringify(saved)); } catch { /* ignore */ }
+            }
+        } catch { /* ignore */ }
         try { (window as any).LibraryMenu?.setDocumentTitle?.(saved.name); } catch { /* ignore */ }
 
         // Reuse this server's ApiClient if one exists this session; otherwise build one from the
@@ -89,6 +111,7 @@ function restoreJellyfin(): boolean {
         apiClient.setAuthenticationInfo(saved.token, saved.userId);
         sc.setLocalApiClient(apiClient);
         sc.firstConnection = true;
+        bindUserSettings(saved.userId, apiClient);
         return true;
     } catch {
         return false;

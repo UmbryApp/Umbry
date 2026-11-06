@@ -8,7 +8,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: max(2.5vh, 14px) 6vw 3vh;
+    /* Clear the phone status bar (the collapse and menu buttons sat under the clock). */
+    padding: max(2.5vh, 14px, calc(env(safe-area-inset-top, 0px) + 8px)) 6vw 3vh;
     color: #fff;
     background: #000;
     overflow: hidden auto;
@@ -30,6 +31,13 @@
     background: radial-gradient(120% 90% at 50% 8%, rgba(6, 5, 14, 0.1) 0%, rgba(6, 5, 14, 0.55) 55%, rgba(6, 5, 14, 0.9) 100%);
 }
 .jpx-mp > *:not(.jpx-mp-glow):not(.jpx-mp-scrim) { position: relative; z-index: 1; }
+/* Never squash rows when the window is short (overflow:hidden rows would shrink below their text) — scroll instead. */
+.jpx-mp > * { flex-shrink: 0; }
+/* TV (1280x720 canvas): tighter art + spacing so the whole player fits without scrolling. */
+html.jpx-tv .jpx-mp { padding-top: 12px; padding-bottom: 12px; }
+html.jpx-tv .jpx-mp-head { margin-bottom: 0.2em; }
+html.jpx-tv .jpx-mp-art { width: min(40vh, 290px); margin-bottom: 0.9em; }
+html.jpx-tv .jpx-mp-album { margin-bottom: 0.3em; }
 
 .jpx-mp-head { width: 100%; display: flex; justify-content: space-between; margin-bottom: 1.2em; }
 .jpx-mp-head button { border: 0; background: rgba(255, 255, 255, 0.08); border-radius: 50%; width: 2.6em; height: 2.6em; color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }

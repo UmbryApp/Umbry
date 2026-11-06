@@ -100,6 +100,10 @@ class AppRouter {
             this.resolveOnNextShow = resolve;
             // Schedule a call to return the promise
             setTimeout(() => history.push(path, options), 0);
+            // Umbry: a navigation that never fires 'viewshow' (e.g. switching Home's ?tab= on the same
+            // view) must not leave promiseShow pending forever — every later show() awaits it, so all
+            // navigation (More Info, cards, search) silently stopped. Release it after a grace period.
+            setTimeout(() => { if (this.resolveOnNextShow === resolve) this.onViewShow(); }, 4000);
         });
 
         return this.promiseShow;

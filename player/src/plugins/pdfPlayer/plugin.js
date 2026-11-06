@@ -211,7 +211,7 @@ export class PdfPlayer {
 
         return import('pdfjs-dist').then(({ GlobalWorkerOptions, getDocument }) => {
             const api = toApi(ServerConnections.getApiClient(item));
-            const downloadHref = getLibraryApi(api).getDownloadUrl({ itemId: item.Id }).replace(/([?&])ApiKey=/gi, '$1api_key=');
+            const downloadHref = getLibraryApi(api).getDownloadUrl({ itemId: item.Id }).replace(/([?&])ApiKey=([^&]+)/i, '$1ApiKey=$2&api_key=$2') /* Umbry: both names — Emby needs api_key, Jellyfin 12 ApiKey */;
 
             this.bindEvents();
             GlobalWorkerOptions.workerSrc = appRouter.baseUrl() + '/libraries/pdf.worker.js';

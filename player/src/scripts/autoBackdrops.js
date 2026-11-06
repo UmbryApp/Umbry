@@ -10,6 +10,10 @@ import { ServerConnections } from 'lib/jellyfin-apiclient';
 const cache = {};
 
 function enabled() {
+    // Umbry TV: the stock rotating page backdrop is hidden under Umbry's own layers (the card-focus
+    // backdrop is jpxHoverBackdrop), but it still decodes a screen-sized image every 10s, which a
+    // 2 GB TV can't spare. Skip it there.
+    if (document.documentElement.classList.contains('jpx-tv')) return false;
     return userSettings.enableBackdrops();
 }
 

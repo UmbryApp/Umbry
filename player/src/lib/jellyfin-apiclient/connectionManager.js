@@ -535,6 +535,12 @@ export default class ConnectionManager {
                 addressesStrings.push(addresses[addresses.length - 1].url);
             }
 
+            // Umbry: the typed address goes first; the others wait in case it doesn't answer.
+            if (serverInfo.ManualAddress) {
+                addresses.sort((a, b) => (a.mode === ConnectionMode.Manual ? 0 : 1) - (b.mode === ConnectionMode.Manual ? 0 : 1));
+                addresses.forEach((a) => { a.timeout = a.mode === ConnectionMode.Manual ? 0 : 4000; });
+            }
+
             console.info('[ConnectionManager] tryReconnect addresses', addressesStrings);
 
             return new Promise((resolve, reject) => {

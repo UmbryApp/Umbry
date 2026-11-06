@@ -25,6 +25,9 @@ const DATA_DIR = process.env.DATA_DIR || '/data';
 const STORE_PATH = path.join(DATA_DIR, 'umbry.json');
 const TOKEN_TTL = process.env.TOKEN_TTL || '30d';
 const CORS_ORIGINS = (process.env.CORS_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+// X-Forwarded-For is trusted only from a reverse proxy you name (TRUST_PROXY=127.0.0.1 or a CIDR list).
+// Off by default: a client could otherwise invent its IP and walk around the login rate limits.
+const TRUST_PROXY = (process.env.TRUST_PROXY || '').split(',').map((s) => s.trim()).filter(Boolean);
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 // Migrate a legacy store file (pre-rename) so existing data carries over to the Umbry name.
@@ -92,7 +95,7 @@ class JsonStore {
     }
 
     insertAccount(id, email, pwHash, recoveryHash, createdAt, updatedAt) {
-        this.data.accounts[id] = { id, email, pw_hash: pwHash, recovery_hash: recoveryHash, created_at: createdAt, updated_at: updatedAt };
+        this.data.accounts[id] = { id, email, pw_hash: pwHash, recovery_hash: recoveryHash, token_version: 0, created_at: createdAt, updated_at: updatedAt };
         this.data.emailIndex[email] = id;
         this._persist();
     }
@@ -102,6 +105,7 @@ class JsonStore {
         if (!acc) return;
         if (fields.pw_hash !== undefined) acc.pw_hash = fields.pw_hash;
         if (fields.recovery_hash !== undefined) acc.recovery_hash = fields.recovery_hash;
+        if (fields.token_version !== undefined) acc.token_version = fields.token_version;
         acc.updated_at = fields.updated_at || Date.now();
         this._persist();
     }
@@ -163,13 +167,37 @@ function decrypt(b64) {
 }
 
 const emailRe = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
-const sign = (id) => jwt.sign({ sub: id }, JWT_SECRET, { expiresIn: TOKEN_TTL });
+// `tv` (token version) lets a password reset sign out every existing session for that account.
+const tokenVersion = (id) => (store.data.accounts[id] && store.data.accounts[id].token_version) || 0;
+const sign = (id) => jwt.sign({ sub: id, tv: tokenVersion(id) }, JWT_SECRET, { expiresIn: TOKEN_TTL, algorithm: 'HS256' });
+// A hash to verify against when the email is unknown, so a miss takes as long as a wrong password.
+const DUMMY_HASH = await hashPassword(crypto.randomBytes(16).toString('hex'));
 
-const app = Fastify({ logger: true, trustProxy: true, bodyLimit: 2 * 1024 * 1024 });
+// Per-email login throttle (on top of the per-IP limits): 10 misses in 15 min locks that email for 15 min.
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const loginFails = new Map(); // email -> { n, first }
+function loginLocked(em) {
+    const f = loginFails.get(em);
+    if (!f) return false;
+    if (Date.now() - f.first > LOGIN_WINDOW_MS) { loginFails.delete(em); return false; }
+    return f.n >= 10;
+}
+function noteLoginFail(em) {
+    const f = loginFails.get(em);
+    if (!f || Date.now() - f.first > LOGIN_WINDOW_MS) loginFails.set(em, { n: 1, first: Date.now() });
+    else f.n++;
+    if (loginFails.size > 10000) loginFails.delete(loginFails.keys().next().value);
+}
+
+const app = Fastify({ logger: true, trustProxy: TRUST_PROXY.length ? TRUST_PROXY : false, bodyLimit: 2 * 1024 * 1024 });
+// Loopback-only routes (the tray's Current Connections) never get CORS headers, so no web page can read them.
+const LOCAL_ONLY_ROUTES = new Set(['/connections', '/connections.json']);
 await app.register(cors, {
-    origin: CORS_ORIGINS.length ? CORS_ORIGINS : true,
-    methods: ['GET', 'PUT', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    delegator: (req, cb) => {
+        const p = (req.url || '').split('?')[0];
+        if (LOCAL_ONLY_ROUTES.has(p)) return cb(null, { origin: false });
+        cb(null, { origin: CORS_ORIGINS.length ? CORS_ORIGINS : true, methods: ['GET', 'PUT', 'POST', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] });
+    }
 });
 await app.register(rateLimit, { global: false });
 
@@ -177,7 +205,9 @@ async function requireAuth(req, reply) {
     const m = /^Bearer (.+)$/.exec(req.headers.authorization || '');
     if (!m) return reply.code(401).send({ error: 'unauthorized' });
     try {
-        req.accountId = jwt.verify(m[1], JWT_SECRET).sub;
+        const claims = jwt.verify(m[1], JWT_SECRET, { algorithms: ['HS256'] });
+        if (!store.data.accounts[claims.sub] || (claims.tv || 0) !== tokenVersion(claims.sub)) throw new Error('revoked');
+        req.accountId = claims.sub;
     } catch {
         return reply.code(401).send({ error: 'unauthorized' });
     }
@@ -211,10 +241,11 @@ app.post('/auth/register', { config: { rateLimit: { max: 10, timeWindow: '1 minu
 app.post('/auth/login', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req, reply) => {
     const { email, password } = req.body || {};
     const em = String(email || '').trim().toLowerCase();
+    if (loginLocked(em)) return reply.code(429).send({ error: 'too many attempts, try again in 15 minutes' });
     const acc = store.accountByEmail(em);
-    if (!acc) return reply.code(401).send({ error: 'invalid credentials' });
-    const ok = await verifyPassword(acc.pw_hash, password);
-    if (!ok) return reply.code(401).send({ error: 'invalid credentials' });
+    const ok = await verifyPassword(acc ? acc.pw_hash : DUMMY_HASH, password);
+    if (!acc || !ok) { noteLoginFail(em); return reply.code(401).send({ error: 'invalid credentials' }); }
+    loginFails.delete(em);
     return { token: sign(acc.id), email: em };
 });
 
@@ -233,7 +264,8 @@ app.post('/auth/reset', { config: { rateLimit: { max: 10, timeWindow: '1 minute'
     const pwHash = await hashPassword(newPassword);
     const nextCode = makeRecoveryCode();
     const nextHash = await hashPassword(normCode(nextCode));
-    store.setAccountAuth(acc.id, { pw_hash: pwHash, recovery_hash: nextHash, updated_at: Date.now() });
+    // New password: every session issued before now stops working.
+    store.setAccountAuth(acc.id, { pw_hash: pwHash, recovery_hash: nextHash, token_version: tokenVersion(acc.id) + 1, updated_at: Date.now() });
     return { token: sign(acc.id), email: em, recoveryCode: nextCode };
 });
 
@@ -260,6 +292,7 @@ const CONN_TTL_MS = 150000; // a device drops off ~2.5 min after its last beat (
 const liveConns = new Map(); // `${accountId}|${ip}` -> { accountId, ip, lastSeen }
 function recordConn(accountId, ip, ua) {
     if (!accountId || !ip) return;
+    if (liveConns.size > 5000) activeConns(); // drop stale entries before the map can grow without bound
     liveConns.set(accountId + '|' + ip, { accountId, ip, ua, lastSeen: Date.now() });
 }
 function parseDevice(ua) {
@@ -290,7 +323,12 @@ function activeConns() {
 }
 function isLoopback(req) {
     const a = (req.socket && req.socket.remoteAddress) || ''; // raw TCP peer, NOT the XFF-derived req.ip
-    return a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1';
+    if (!(a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1')) return false;
+    // A browser on this machine is loopback too: refuse anything a web page sent (it carries an
+    // Origin or a non-loopback Host, e.g. DNS rebinding). The tray sends neither.
+    if (req.headers.origin) return false;
+    const host = String(req.headers.host || '').replace(/:\d+$/, '').replace(/^\[|\]$/g, '').toLowerCase();
+    return host === '127.0.0.1' || host === 'localhost' || host === '::1';
 }
 function isPrivateIp(ip) {
     const c = ip.replace(/^::ffff:/, '');
@@ -305,6 +343,8 @@ async function geoLocate(ip) {
     if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.loc;
     let loc = 'Unknown';
     try {
+        // Opt-in: looking up a location sends the visitor's IP to ip-api.com (a third party).
+        if (process.env.GEOIP !== '1') return 'Remote';
         const r = await fetch(`http://ip-api.com/json/${clean}?fields=status,city,regionName,country`, { signal: AbortSignal.timeout(4000) });
         const d = await r.json();
         if (d && d.status === 'success') loc = [d.city, d.regionName, d.country].filter(Boolean).join(', ') || 'Unknown';
