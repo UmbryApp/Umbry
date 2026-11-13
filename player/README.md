@@ -4,7 +4,7 @@ The Umbry media-player client — a fork of [Jellyfin Web](https://github.com/je
 
 ## Build
 
-Requires Node 20+.
+Requires Node 24+.
 
     npm ci
     npm run build:production

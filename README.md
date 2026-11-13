@@ -105,7 +105,7 @@ The server generates its own signing + encryption keys on first run (kept in the
 
 ### Build the Player from source (no Docker)
 
-Requires Node 20+.
+Requires Node 24+.
 
     cd player
     npm ci
