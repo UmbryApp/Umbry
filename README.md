@@ -16,18 +16,57 @@ Umbry is an **independent** project and is **not affiliated with, endorsed by, o
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/01-home.jpg" alt="Cinematic home with an auto-playing hero" width="100%">
+  <img src="docs/screenshots/home.webp" alt="Home with a featured film hero and Recently Added row" width="100%">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/02-detail.jpg" alt="Rich detail pages with cast, trailers and one-tap actions" width="49%">
+  <img src="docs/screenshots/detail.webp" alt="Detail page for Dune: Part Two with 4K, Dolby Vision and Atmos badges, ratings and a Play button" width="49%">
   &nbsp;
-  <img src="docs/screenshots/04-genres.jpg" alt="Browse everything by genre" width="49%">
+  <img src="docs/screenshots/servers.webp" alt="The server switcher listing Emby, Plex and Jellyfin" width="49%">
 </p>
+<p align="center"><sub><b>Rich detail pages</b> with quality badges and ratings &nbsp;·&nbsp; <b>Jellyfin, Emby and Plex</b> in one app, switch in a click</sub></p>
 
 <p align="center">
-  <img src="docs/screenshots/03-livetv.jpg" alt="Built-in free Live TV with a full channel guide" width="100%">
+  <img src="docs/screenshots/drawer.webp" alt="Home with five minimized rows shown as thumbnail stacks in a drawer under the hero" width="49%">
+  &nbsp;
+  <img src="docs/screenshots/livetv.webp" alt="The Live TV program guide with channel categories and a timeline" width="49%">
 </p>
+<p align="center"><sub><b>Minimize home rows</b> into a drawer of thumbnail stacks &nbsp;·&nbsp; <b>Free Live TV</b> with a full channel guide</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/themes.webp" alt="Home in the Christmas theme with falling snow" width="49%">
+  &nbsp;
+  <img src="docs/screenshots/music.webp" alt="The music player playing Dreams by Fleetwood Mac with album art and controls" width="49%">
+</p>
+<p align="center"><sub><b>Themes</b>, including seasonal ones with falling snow &nbsp;·&nbsp; a full-screen <b>music player</b></sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/library.webp" alt="The Movies library as a poster grid" width="49%">
+  &nbsp;
+  <img src="docs/screenshots/search.webp" alt="Search results for star, grouped into movies and shows" width="49%">
+</p>
+<p align="center"><sub><b>Libraries</b> as poster grids &nbsp;·&nbsp; <b>Search</b> grouped into movies and shows</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/series.webp" alt="The Severance series page with Next Up and an episode row" width="49%">
+  &nbsp;
+  <img src="docs/screenshots/cast.webp" alt="The Dune: Part Two cast row with actor photos" width="49%">
+</p>
+<p align="center"><sub><b>TV shows</b> with Next Up and episodes &nbsp;·&nbsp; <b>Cast &amp; crew</b> with photos</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/album.webp" alt="The Rumours album page by Fleetwood Mac" width="49%">
+  &nbsp;
+  <img src="docs/screenshots/books.webp" alt="The Books home with Continue Reading" width="49%">
+</p>
+<p align="center"><sub><b>Albums</b> &nbsp;·&nbsp; a <b>Books</b> home with Continue Reading</sub></p>
+
+<p align="center">
+  <img src="docs/screenshots/reader.webp" alt="A Transformers comic open in the reader" width="49%">
+  &nbsp;
+  <img src="docs/screenshots/kids.webp" alt="Parental Controls settings with PIN, maximum rating and hidden libraries" width="49%">
+</p>
+<p align="center"><sub>A built-in <b>comic and book reader</b> &nbsp;·&nbsp; <b>Kids Mode</b> with a PIN, rating limit and hidden libraries</sub></p>
 
 ## Two ways to run the Player
 
